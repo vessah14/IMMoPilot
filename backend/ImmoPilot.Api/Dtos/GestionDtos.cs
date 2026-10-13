@@ -20,7 +20,8 @@ public record EcheanceDto(
     DateTime? DerniereRelance,
     // Coordonnées du locataire : la relance part depuis la messagerie ou le WhatsApp du propriétaire
     string Telephone,
-    string Email);
+    string Email,
+    string? JetonPaiement);
 
 public record RelanceRequeteDto(
     [Range(1, int.MaxValue, ErrorMessage = "Le locataire est obligatoire.")] int LocataireId,

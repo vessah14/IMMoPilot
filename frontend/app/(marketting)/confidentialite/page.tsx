@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import PageLegale, { type SectionLegale } from "@/components/ui/PageLegale";
+import LienContact from "@/components/ui/LienContact";
 import { editeur } from "@/lib/legal";
 
 export const metadata: Metadata = {
@@ -15,7 +16,7 @@ const sections: SectionLegale[] = [
     contenu: (
       <>
         <p>
-          <strong>{editeur.nom}</strong> ({editeur.adresse}) est responsable des données de ses clients : les bailleurs et
+          <strong>{editeur.nom}</strong>{editeur.adresse && ` (${editeur.adresse})`} est responsable des données de ses clients : les bailleurs et
           gestionnaires qui créent un compte.
         </p>
         <p>
@@ -23,7 +24,7 @@ const sections: SectionLegale[] = [
           responsable : IMMO PILOT agit uniquement pour son compte, comme sous-traitant.
         </p>
         <p>
-          Contact pour toute question sur vos données : <a href={`mailto:${editeur.email}`}>{editeur.email}</a>.
+          Contact pour toute question sur vos données : <LienContact />.
         </p>
       </>
     ),
@@ -138,7 +139,7 @@ const sections: SectionLegale[] = [
           <li>vous opposer à certains traitements ou en demander la limitation.</li>
         </ul>
         <p>
-          Écrivez-nous à <a href={`mailto:${editeur.email}`}>{editeur.email}</a> ou utilisez l&apos;onglet Support de votre
+          Écrivez-nous à <LienContact /> ou utilisez l&apos;onglet Support de votre
           espace. Nous répondons dans un délai d&apos;un mois. Un locataire qui souhaite exercer ses droits doit s&apos;adresser
           à son bailleur ; nous l&apos;aiderons à y répondre.
         </p>

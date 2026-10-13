@@ -17,6 +17,7 @@ import {
 import Input, { styleChamp } from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import IndicateurEtapes from "@/components/ui/IndicateurEtapes";
+import ChampsBeneficiaire from "@/components/dashboard/ChampsBeneficiaire";
 import { apiClient, ErreurApi } from "@/lib/api-client";
 import type { Immeuble } from "@/lib/types";
 
@@ -88,6 +89,8 @@ export default function AjouterImmeuble() {
           quartier: d.get("quartier"),
           nombreEtages: nombre("etages"),
           anneeConstruction: nombre("annee"),
+        beneficiaireNom: d.get("beneficiaireNom") || null,
+        beneficiaireCompte: d.get("beneficiaireCompte") || null,
         },
       });
 
@@ -223,6 +226,7 @@ export default function AjouterImmeuble() {
                 max={2100}
                 placeholder="ex : 2018"
               />
+              <ChampsBeneficiaire aide="Laissez vide si les loyers vous reviennent : ils arriveront sur votre numéro (Paramètres → Agence). Chaque logement peut aussi avoir son propre propriétaire." />
             </fieldset>
 
             {/* Étape 4 : photo */}

@@ -138,6 +138,7 @@ export default function FormulaireInscription({
           profil: profilsApi[profil],
           nomStructure: d.get("structure") || null,
           ville: d.get("ville"),
+          compteEncaissement: d.get("compteEncaissement"),
           formule,
         },
       });
@@ -274,6 +275,21 @@ export default function FormulaireInscription({
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Input
+            id="compteEncaissement"
+            label="Numéro Mobile Money pour recevoir vos loyers"
+            type="tel"
+            inputMode="tel"
+            placeholder="ex : 677 12 34 56"
+            pattern="[\s+0-9]{9,20}"
+            required
+          />
+          <p className="text-xs text-gray-500">
+            Orange Money ou MTN MoMo. Les loyers payés en ligne par vos locataires arrivent directement sur ce numéro (modifiable plus tard).
+          </p>
         </div>
 
         <div className="flex flex-col gap-3">

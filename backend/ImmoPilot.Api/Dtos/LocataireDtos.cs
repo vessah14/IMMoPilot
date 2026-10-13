@@ -24,4 +24,7 @@ public record LocataireDto(
     DateOnly FinBail,
     decimal Loyer,
     decimal Caution,
-    SituationPaiement Situation);
+    SituationPaiement Situation,
+    string? JetonPaiement, // lien personnel de paiement : /payer/{jeton}
+    string? BeneficiaireNom, // qui reçoit les loyers payés en ligne (logement → immeuble → bailleur)
+    string? BeneficiaireCompte);

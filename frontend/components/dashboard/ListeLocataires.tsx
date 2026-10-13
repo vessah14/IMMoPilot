@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CircleCheck, Clock, CircleAlert, Users, Mail, Phone, DoorOpen, Trash2 } from "lucide-react";
 import { Recherche, Pastilles, Badge, EtatVide } from "@/components/dashboard/Filtres";
 import { BoutonModifier, ModifierLocataire } from "@/components/dashboard/Modifier";
+import LienPaiement, { BoutonLienPaiement } from "@/components/dashboard/LienPaiement";
 import { apiClient, ErreurApi } from "@/lib/api-client";
 import { fcfa, dateCourte } from "@/lib/format";
 import type { Locataire, SituationPaiement } from "@/lib/types";
@@ -33,12 +34,21 @@ function Avatar({ nom }: { nom: string }) {
   );
 }
 
-export default function ListeLocataires({ locataires }: { locataires: Locataire[] }) {
+export default function ListeLocataires({
+  locataires,
+  logementsVacants,
+  compteEncaissement,
+}: {
+  locataires: Locataire[];
+  logementsVacants: { id: number; libelle: string; loyer: number }[]; // pour attribuer un logement dans « Modifier »
+  compteEncaissement: string | null; // compte du bailleur qui reçoit les loyers en ligne
+}) {
   const router = useRouter();
   const [recherche, setRecherche] = useState("");
   const [filtre, setFiltre] = useState<SituationPaiement | "tous" | "anciens">("tous");
   const [occupe, setOccupe] = useState<number | null>(null);
   const [edition, setEdition] = useState<Locataire | null>(null); // locataire en cours de modification
+  const [lien, setLien] = useState<Locataire | null>(null); // fenêtre du lien de paiement
 
   const actuels = locataires.filter((l) => l.logementId !== null);
   const resultats = locataires.filter((l) => {
@@ -77,6 +87,9 @@ export default function ListeLocataires({ locataires }: { locataires: Locataire[
 
   const actions = (l: Locataire) => (
     <div className="flex items-center justify-end gap-1">
+      {l.logementId !== null && l.jetonPaiement && (
+        <BoutonLienPaiement onClick={() => setLien(l)} libelle={`Lien de paiement de ${l.nomComplet}`} />
+      )}
       <BoutonModifier onClick={() => setEdition(l)} libelle={`Modifier ${l.nomComplet}`} />
       {l.logementId !== null && (
         <button
@@ -105,7 +118,8 @@ export default function ListeLocataires({ locataires }: { locataires: Locataire[
 
   return (
     <div className="rounded-xl bg-white shadow-sm border border-gray-100">
-      {edition && <ModifierLocataire key={edition.id} element={edition} onFermer={() => setEdition(null)} />}
+      {edition && <ModifierLocataire key={edition.id} element={edition} logementsVacants={logementsVacants} onFermer={() => setEdition(null)} />}
+      {lien && <LienPaiement key={lien.id} locataire={lien} compteEncaissement={compteEncaissement} onFermer={() => setLien(null)} />}
       <div className="flex flex-col gap-4 p-5 border-b border-gray-100">
         <Recherche
           valeur={recherche}

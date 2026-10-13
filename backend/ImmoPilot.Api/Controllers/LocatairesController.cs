@@ -27,6 +27,16 @@ public class LocatairesController(ILocataireService service) : ControllerBase
         return CreatedAtAction(nameof(Obtenir), new { id = locataire.Id }, locataire);
     }
 
+    // POST /api/locataires/5/lien-paiement → nouveau lien personnel de paiement (l'ancien est désactivé)
+    [HttpPost("{id:int}/lien-paiement")]
+    public async Task<ActionResult<LocataireDto>> NouveauLienPaiement(int id) =>
+        await service.NouveauLienPaiementAsync(id) is { } locataire ? Ok(locataire) : NotFound();
+
+    // POST /api/locataires/5/lien-paiement/envoi → envoie le lien au locataire par e-mail
+    [HttpPost("{id:int}/lien-paiement/envoi")]
+    public async Task<IActionResult> EnvoyerLienPaiement(int id) =>
+        await service.EnvoyerLienParEmailAsync(id) ? NoContent() : NotFound();
+
     [HttpPut("{id:int}")]
     public async Task<ActionResult<LocataireDto>> Modifier(int id, LocataireRequeteDto requete) =>
         await service.ModifierAsync(id, requete) is { } locataire ? Ok(locataire) : NotFound();

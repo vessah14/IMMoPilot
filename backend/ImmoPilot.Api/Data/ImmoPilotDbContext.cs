@@ -55,11 +55,25 @@ public class ImmoPilotDbContext(DbContextOptions<ImmoPilotDbContext> options) : 
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // Propriétaire du bien qui reçoit les loyers payés en ligne
+        modelBuilder.Entity<Immeuble>(e =>
+        {
+            e.Property(i => i.BeneficiaireNom).HasMaxLength(150);
+            e.Property(i => i.BeneficiaireCompte).HasMaxLength(20);
+        });
+        modelBuilder.Entity<Logement>(e =>
+        {
+            e.Property(l => l.BeneficiaireNom).HasMaxLength(150);
+            e.Property(l => l.BeneficiaireCompte).HasMaxLength(20);
+        });
+
         modelBuilder.Entity<Locataire>(e =>
         {
             e.Property(l => l.NomComplet).HasMaxLength(150);
             e.Property(l => l.Email).HasMaxLength(200);
             e.Property(l => l.Telephone).HasMaxLength(30);
+            e.Property(l => l.JetonPaiement).HasMaxLength(64);
+            e.HasIndex(l => l.JetonPaiement).IsUnique();
             e.Property(l => l.Loyer).HasPrecision(14, 2);
             e.Property(l => l.Caution).HasPrecision(14, 2);
 
@@ -94,6 +108,7 @@ public class ImmoPilotDbContext(DbContextOptions<ImmoPilotDbContext> options) : 
             e.Property(u => u.NomComplet).HasMaxLength(150);
             e.Property(u => u.Email).HasMaxLength(200);
             e.HasIndex(u => u.Email).IsUnique();
+            e.Property(u => u.CompteEncaissement).HasMaxLength(20);
             e.Property(u => u.Telephone).HasMaxLength(30);
             e.Property(u => u.MotDePasseHash).HasMaxLength(500);
             e.Property(u => u.Role).HasConversion<string>().HasMaxLength(20);

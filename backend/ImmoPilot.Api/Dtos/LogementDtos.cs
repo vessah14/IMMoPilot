@@ -11,7 +11,9 @@ public record LogementRequeteDto(
     [Range(1, 100000)] decimal Surface,
     [Range(0, 1000000000)] decimal Loyer,
     [Range(0, 1000000000)] decimal Charges,
-    StatutLogement? Statut);
+    StatutLogement? Statut,
+    [StringLength(150)] string? BeneficiaireNom = null, // propriétaire du bien (facultatif)
+    [StringLength(30)] string? BeneficiaireCompte = null); // son numéro Mobile Money (facultatif)
 
 public record LogementDto(
     int Id,
@@ -24,4 +26,6 @@ public record LogementDto(
     decimal Loyer,
     decimal Charges,
     StatutLogement Statut,
-    string? Locataire); // nom du locataire actuel, s'il y en a un
+    string? Locataire, // nom du locataire actuel, s'il y en a un
+    string? BeneficiaireNom,
+    string? BeneficiaireCompte);

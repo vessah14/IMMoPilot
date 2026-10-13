@@ -13,6 +13,8 @@ public class AbonnementService(
     ICampayService campay,
     IParametresService parametres,
     INotificationService notifications,
+    IFileEmails fileEmails,
+    ModelesEmail modeles,
     TimeProvider horloge,
     ILogger<AbonnementService> journal) : IAbonnementService
 {
@@ -237,6 +239,8 @@ public class AbonnementService(
         await db.SaveChangesAsync();
 
         paiement.Statut = StatutPaiementAbonnement.Reussi;
+        fileEmails.Ajouter(modeles.AbonnementPaye(bailleur.Email, bailleur.NomComplet, paiement.Formule.ToString(), paiement.DureeMois,
+            paiement.Montant, DateOnly.FromDateTime(bailleur.FinAbonnement.Value), $"IP-{Maintenant.Year}-{paiement.Id:D6}"));
         journal.LogInformation("Abonnement prolongé : bailleur {Id}, {Formule}, {Mois} mois", bailleur.Id, paiement.Formule, paiement.DureeMois);
     }
 

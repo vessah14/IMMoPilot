@@ -3,6 +3,7 @@
 import { Plus } from "lucide-react";
 import Input from "@/components/ui/Input";
 import FormulaireModal, { ChampSelect } from "@/components/ui/FormulaireModal";
+import ChampsBeneficiaire from "@/components/dashboard/ChampsBeneficiaire";
 import { apiClient } from "@/lib/api-client";
 import { libellesTypeLogement } from "@/lib/format";
 
@@ -19,6 +20,8 @@ export default function AjouterLogement({ immeubles }: { immeubles: { id: number
         loyer: Number(d.get("loyer")),
         charges: Number(d.get("charges") || 0),
         statut: d.get("statut"),
+        beneficiaireNom: d.get("beneficiaireNom") || null,
+        beneficiaireCompte: d.get("beneficiaireCompte") || null,
       },
     });
   };
@@ -50,6 +53,7 @@ export default function AjouterLogement({ immeubles }: { immeubles: { id: number
           { valeur: "Travaux", texte: "En travaux" },
         ]}
       />
+      <ChampsBeneficiaire aide="Laissez vide pour utiliser le propriétaire de l'immeuble, ou à défaut votre numéro (Paramètres → Agence)." />
     </FormulaireModal>
   );
 }

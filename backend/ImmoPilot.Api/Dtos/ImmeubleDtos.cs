@@ -12,7 +12,9 @@ public record ImmeubleRequeteDto(
     [Required, StringLength(100)] string Ville,
     [Required, StringLength(100)] string Quartier,
     [Range(0, 200)] int? NombreEtages,
-    [Range(1900, 2100)] int? AnneeConstruction);
+    [Range(1900, 2100)] int? AnneeConstruction,
+    [StringLength(150)] string? BeneficiaireNom = null, // propriétaire du bien (facultatif)
+    [StringLength(30)] string? BeneficiaireCompte = null); // son numéro Mobile Money (facultatif)
 
 // Données renvoyées par l'API
 public record ImmeubleDto(
@@ -28,4 +30,6 @@ public record ImmeubleDto(
     DateTime DateCreation,
     string? PhotoUrl,
     int NombreLogements,
-    int LogementsOccupes);
+    int LogementsOccupes,
+    string? BeneficiaireNom,
+    string? BeneficiaireCompte);

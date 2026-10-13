@@ -51,6 +51,7 @@ export default function ParametresCompte({ moi, tickets, abonnement, ongletIniti
         ville: valeur("ville", moi.ville) || null,
         adresse: valeur("adresse", moi.adresse) || null,
         jourEcheance: Number(valeur("jourEcheance", moi.jourEcheance)),
+        compteEncaissement: valeur("compteEncaissement", moi.compteEncaissement) || null,
       },
     });
   };
@@ -155,6 +156,19 @@ export default function ParametresCompte({ moi, tickets, abonnement, ongletIniti
               />
               <div className="sm:col-span-2">
                 <Input id="adresse" label="Adresse" defaultValue={moi.adresse ?? ""} />
+              </div>
+              <div className="sm:col-span-2 space-y-1.5">
+                <Input
+                  id="compteEncaissement"
+                  label="Numéro Mobile Money de réception des loyers"
+                  type="tel"
+                  placeholder="ex : 677 12 34 56"
+                  defaultValue={moi.compteEncaissement?.replace(/^237/, "") ?? ""}
+                  required
+                />
+                <p className="text-xs text-gray-500">
+                  Orange Money ou MTN MoMo : les loyers payés en ligne par vos locataires sont versés sur ce numéro.
+                </p>
               </div>
             </div>
             <p className="mt-4 text-sm text-gray-500">

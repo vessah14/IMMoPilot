@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import PageLegale, { type SectionLegale } from "@/components/ui/PageLegale";
+import LienContact from "@/components/ui/LienContact";
 import { editeur } from "@/lib/legal";
 
 export const metadata: Metadata = {
@@ -32,12 +33,13 @@ const sections: SectionLegale[] = [
     contenu: (
       <ul>
         <li><strong>Nom :</strong> {editeur.nom}</li>
-        <li><strong>Forme juridique :</strong> {editeur.formeJuridique}</li>
-        <li><strong>RCCM :</strong> {editeur.rccm}</li>
-        <li><strong>NIU :</strong> {editeur.niu}</li>
-        <li><strong>Adresse :</strong> {editeur.adresse}</li>
-        <li><strong>E-mail :</strong> <a href={`mailto:${editeur.email}`}>{editeur.email}</a></li>
-        <li><strong>Téléphone :</strong> {editeur.telephone}</li>
+        <li><strong>Statut :</strong> {editeur.statut}</li>
+        {editeur.formeJuridique && <li><strong>Forme juridique :</strong> {editeur.formeJuridique}</li>}
+        {editeur.rccm && <li><strong>RCCM :</strong> {editeur.rccm}</li>}
+        {editeur.niu && <li><strong>NIU :</strong> {editeur.niu}</li>}
+        {editeur.adresse && <li><strong>Adresse :</strong> {editeur.adresse}</li>}
+        <li><strong>Contact :</strong> <LienContact /></li>
+        {editeur.telephone && <li><strong>Téléphone :</strong> {editeur.telephone}</li>}
       </ul>
     ),
   },
@@ -53,7 +55,7 @@ const sections: SectionLegale[] = [
         <p>
           Vous êtes responsable de la confidentialité de votre mot de passe et de toute action réalisée depuis votre
           compte. En cas d&apos;utilisation non autorisée, prévenez-nous sans délai à{" "}
-          <a href={`mailto:${editeur.email}`}>{editeur.email}</a>.
+          <LienContact />.
         </p>
       </>
     ),
@@ -201,7 +203,7 @@ const sections: SectionLegale[] = [
     contenu: (
       <p>
         Les présentes Conditions sont soumises au droit camerounais. En cas de désaccord, écrivez-nous d&apos;abord à{" "}
-        <a href={`mailto:${editeur.email}`}>{editeur.email}</a> afin de trouver une solution amiable. À défaut, le litige
+        <LienContact /> afin de trouver une solution amiable. À défaut, le litige
         sera porté devant les juridictions compétentes du ressort du siège de l&apos;éditeur.
       </p>
     ),

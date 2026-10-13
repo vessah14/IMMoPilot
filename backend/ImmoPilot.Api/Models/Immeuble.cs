@@ -16,6 +16,10 @@ public class Immeuble
     public int? NombreEtages { get; set; }
     public int? AnneeConstruction { get; set; }
 
+    // Propriétaire du bien qui reçoit les loyers payés en ligne (facultatif)
+    public string? BeneficiaireNom { get; set; }
+    public string? BeneficiaireCompte { get; set; } // numéro Mobile Money 2376XXXXXXXX
+
     // Photo principale, hébergée sur Cloudinary
     public string? PhotoUrl { get; set; }
     public string? PhotoId { get; set; } // identifiant Cloudinary (pour la supprimer)

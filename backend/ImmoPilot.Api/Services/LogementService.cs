@@ -93,6 +93,8 @@ public class LogementService(ImmoPilotDbContext db, IUtilisateurCourant moi) : I
         logement.Loyer = r.Loyer;
         logement.Charges = r.Charges;
         if (r.Statut is not null) logement.Statut = r.Statut.Value;
+        logement.BeneficiaireNom = Beneficiaires.NomOuNull(r.BeneficiaireNom);
+        logement.BeneficiaireCompte = Beneficiaires.NumeroOuNull(r.BeneficiaireCompte);
     }
 
     private static IQueryable<LogementDto> VersDto(IQueryable<Logement> requete) =>
@@ -107,5 +109,7 @@ public class LogementService(ImmoPilotDbContext db, IUtilisateurCourant moi) : I
             l.Loyer,
             l.Charges,
             l.Statut,
-            l.Locataires.Select(lo => lo.NomComplet).FirstOrDefault()));
+            l.Locataires.Select(lo => lo.NomComplet).FirstOrDefault(),
+            l.BeneficiaireNom,
+            l.BeneficiaireCompte));
 }

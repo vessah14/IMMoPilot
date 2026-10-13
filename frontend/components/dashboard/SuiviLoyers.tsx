@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import CarteStat from "@/components/dashboard/CarteStat";
 import { Pastilles, Badge, EtatVide } from "@/components/dashboard/Filtres";
-import { apiClient, ErreurApi } from "@/lib/api-client";
+import { apiClient, ErreurApi, URL_SITE } from "@/lib/api-client";
 import { fcfa, nomMois, dateCourte } from "@/lib/format";
 import type { Echeance, StatutEcheance } from "@/lib/types";
 
@@ -252,6 +252,7 @@ const messageRelance = (e: Echeance, mois: string, signature: string) =>
   `Sauf erreur de ma part, le loyer de ${nomMois(mois)} pour le logement ${e.logement} n'est pas encore entièrement réglé ` +
   `(reste à payer : ${fcfa(e.du - e.paye).replace(/\s/g, " ")}).\n` +
   `Merci de régulariser dès que possible. Si vous avez déjà payé, ne tenez pas compte de ce message.\n\n` +
+  (e.jetonPaiement ? `Payez en ligne (Orange Money / MTN MoMo) : ${URL_SITE}/payer/${e.jetonPaiement}\n\n` : "") +
   `Cordialement,\n${signature}`;
 
 // Ouvre la messagerie du propriétaire (Gmail, Outlook…) : l'e-mail part de sa propre adresse

@@ -12,6 +12,8 @@ public class LocataireService(
     ImmoPilotDbContext db,
     IUtilisateurCourant moi,
     INotificationService notifications,
+    IFileEmails fileEmails,
+    ModelesEmail modeles,
     TimeProvider horloge) : ILocataireService
 {
     private IQueryable<Locataire> MesLocataires => db.Locataires.Where(l => l.ProprietaireId == moi.Id);
@@ -45,6 +47,7 @@ public class LocataireService(
             Email = requete.Email.Trim(),
             Telephone = requete.Telephone.Trim(),
             ProprietaireId = moi.Id,
+            JetonPaiement = PaiementLoyerService.NouveauJeton(),
         };
         Appliquer(locataire, requete);
         await ChangerLogementAsync(locataire, ancienLogementId: null, nouveauLogementId: requete.LogementId);
@@ -53,7 +56,48 @@ public class LocataireService(
         notifications.Ajouter(moi.Id, TypeNotification.Bail, $"Nouveau locataire — {locataire.NomComplet}",
             $"Bail du {Dates.Jour(locataire.DebutBail)} au {Dates.Jour(locataire.FinBail)}, loyer de {Dates.Fcfa(locataire.Loyer)}.");
         await db.SaveChangesAsync(); // locataire, statut du logement et notification enregistrés ensemble
+        await EnvoyerLienAsync(locataire.Id); // e-mail au locataire avec son lien de paiement
         return (await ObtenirAsync(locataire.Id))!;
+    }
+
+    // Remplace le lien de paiement (l'ancien ne fonctionne plus, ex : lien partagé par erreur)
+    public async Task<LocataireDto?> NouveauLienPaiementAsync(int id)
+    {
+        var locataire = await MesLocataires.FirstOrDefaultAsync(l => l.Id == id);
+        if (locataire is null) return null;
+        locataire.JetonPaiement = PaiementLoyerService.NouveauJeton();
+        await db.SaveChangesAsync();
+        await EnvoyerLienAsync(id); // le locataire reçoit son nouveau lien
+        return await ObtenirAsync(id);
+    }
+
+    // Bouton « Envoyer par e-mail » de la fenêtre du lien de paiement
+    public async Task<bool> EnvoyerLienParEmailAsync(int id)
+    {
+        if (!await MesLocataires.AnyAsync(l => l.Id == id)) return false;
+        if (!await EnvoyerLienAsync(id))
+            throw new RegleMetierException("Ce locataire n'a pas de logement : attribuez-lui un logement avant d'envoyer son lien.");
+        return true;
+    }
+
+    // Met en file l'e-mail du lien de paiement (seulement si le locataire occupe un logement)
+    private async Task<bool> EnvoyerLienAsync(int id)
+    {
+        var l = await db.Locataires.AsNoTracking().Where(x => x.Id == id && x.LogementId != null && x.JetonPaiement != null)
+            .Select(x => new
+            {
+                x.Email,
+                x.NomComplet,
+                Logement = x.Logement!.Reference + " · " + x.Logement.Immeuble.Nom,
+                x.Loyer,
+                x.JetonPaiement,
+                Bailleur = x.Proprietaire.NomStructure ?? x.Proprietaire.NomComplet,
+                EmailBailleur = x.Proprietaire.Email,
+            })
+            .FirstOrDefaultAsync();
+        if (l is null) return false;
+        fileEmails.Ajouter(modeles.LienLocataire(l.Email, l.NomComplet, l.Logement, l.Loyer, l.Bailleur, l.EmailBailleur, l.JetonPaiement!));
+        return true;
     }
 
     public async Task<LocataireDto?> ModifierAsync(int id, LocataireRequeteDto requete)
@@ -70,6 +114,8 @@ public class LocataireService(
         await ChangerLogementAsync(locataire, ancienLogementId, requete.LogementId);
 
         await db.SaveChangesAsync();
+        if (ancienLogementId is null && requete.LogementId is not null)
+            await EnvoyerLienAsync(id); // logement attribué : le locataire reçoit son lien de paiement
         return await ObtenirAsync(id);
     }
 
@@ -155,6 +201,13 @@ public class LocataireService(
             l.FinBail,
             l.Loyer,
             l.Caution,
+            l.JetonPaiement,
+            CompteLogement = l.Logement == null ? null : l.Logement.BeneficiaireCompte,
+            NomLogement = l.Logement == null ? null : l.Logement.BeneficiaireNom,
+            CompteImmeuble = l.Logement == null ? null : l.Logement.Immeuble.BeneficiaireCompte,
+            NomImmeuble = l.Logement == null ? null : l.Logement.Immeuble.BeneficiaireNom,
+            l.Proprietaire.CompteEncaissement,
+            NomBailleur = l.Proprietaire.NomStructure ?? l.Proprietaire.NomComplet,
         }).ToListAsync();
 
         var aujourdhui = Dates.Aujourdhui(horloge);
@@ -175,9 +228,14 @@ public class LocataireService(
             return SituationPaiement.AJour;
         }
 
-        return lignes.Select(l => new LocataireDto(
-            l.Id, l.NomComplet, l.Email, l.Telephone, l.LogementId, l.Logement,
-            l.DebutBail, l.FinBail, l.Loyer, l.Caution,
-            Situation(l.Id, l.DebutBail, l.FinBail, l.Loyer, l.LogementId))).ToList();
+        return lignes.Select(l =>
+        {
+            var b = Beneficiaires.Resoudre(l.CompteLogement, l.NomLogement, l.CompteImmeuble, l.NomImmeuble, l.CompteEncaissement, l.NomBailleur);
+            return new LocataireDto(
+                l.Id, l.NomComplet, l.Email, l.Telephone, l.LogementId, l.Logement,
+                l.DebutBail, l.FinBail, l.Loyer, l.Caution,
+                Situation(l.Id, l.DebutBail, l.FinBail, l.Loyer, l.LogementId), l.JetonPaiement,
+                b?.Nom, b?.Compte);
+        }).ToList();
     }
 }

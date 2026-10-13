@@ -19,6 +19,9 @@ public class Utilisateur
     public Formule Formule { get; set; } = Formule.Starter;
     public int JourEcheance { get; set; } = 5; // jour du mois où le loyer doit être payé
 
+    // Numéro Mobile Money (2376XXXXXXXX) sur lequel le bailleur reçoit les loyers payés en ligne par ses locataires
+    public string? CompteEncaissement { get; set; }
+
     // Abonnement : null = formule gratuite (Starter), sinon date jusqu'à laquelle la formule payante est active
     // (fin de l'essai gratuit, puis prolongée à chaque paiement)
     public DateTime? FinAbonnement { get; set; }

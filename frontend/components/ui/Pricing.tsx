@@ -47,11 +47,11 @@ export default function Pricing({ prix = prixParDefaut }: { prix?: Prix }) {
               </li>
               <li className="flex items-center gap-3 text-sm text-gray-600">
                 <Check size={18} className="text-green-500 shrink-0" />
-                Tableau de bord basique
+                Paiement en ligne des loyers
               </li>
-              <li className="flex items-center gap-3 text-sm text-gray-400">
-                <X size={18} className="text-gray-300 shrink-0" />
-                Rapports financiers
+              <li className="flex items-center gap-3 text-sm text-gray-600">
+                <Check size={18} className="text-green-500 shrink-0" />
+                Rapports et exports CSV
               </li>
               <li className="flex items-center gap-3 text-sm text-gray-400">
                 <X size={18} className="text-gray-300 shrink-0" />
@@ -85,11 +85,11 @@ export default function Pricing({ prix = prixParDefaut }: { prix?: Prix }) {
               </li>
               <li className="flex items-center gap-3 text-sm text-gray-600">
                 <Check size={18} className="text-green-500 shrink-0" />
-                Suivi des loyers + relances auto
+                Relances e-mail / WhatsApp
               </li>
               <li className="flex items-center gap-3 text-sm text-gray-600">
                 <Check size={18} className="text-green-500 shrink-0" />
-                Gestion des contrats
+                Paiement en ligne des loyers
               </li>
               <li className="flex items-center gap-3 text-sm text-gray-600">
                 <Check size={18} className="text-green-500 shrink-0" />
@@ -97,7 +97,7 @@ export default function Pricing({ prix = prixParDefaut }: { prix?: Prix }) {
               </li>
               <li className="flex items-center gap-3 text-sm text-gray-600">
                 <Check size={18} className="text-green-500 shrink-0" />
-                Support par email
+                Support depuis votre espace
               </li>
             </ul>
             <Link href="/inscription?formule=Pro" className="mt-8 w-full bg-blue-600 text-white py-3 rounded-full font-semibold hover:bg-blue-700 transition shadow-lg shadow-blue-600/30 block text-center">
@@ -128,20 +128,20 @@ export default function Pricing({ prix = prixParDefaut }: { prix?: Prix }) {
               </li>
               <li className="flex items-center gap-3 text-sm text-gray-300">
                 <Check size={18} className="text-blue-400 shrink-0" />
-                Multi-utilisateurs & rôles
+                Idéal pour les agences
               </li>
               <li className="flex items-center gap-3 text-sm text-gray-300">
                 <Check size={18} className="text-blue-400 shrink-0" />
-                API & intégrations
+                Plusieurs propriétaires par parc
               </li>
               <li className="flex items-center gap-3 text-sm text-gray-300">
                 <Check size={18} className="text-blue-400 shrink-0" />
-                Support prioritaire 24/7
+                Support prioritaire
               </li>
             </ul>
-            <a href="mailto:support@immopilot.cm" className="mt-8 w-full border border-white text-white py-3 rounded-full font-semibold hover:bg-white hover:text-gray-900 transition block text-center">
-              Contacter l&apos;équipe
-            </a>
+            <Link href="/inscription?formule=Enterprise" className="mt-8 w-full border border-white text-white py-3 rounded-full font-semibold hover:bg-white hover:text-gray-900 transition block text-center">
+              Choisir Enterprise
+            </Link>
           </div>
 
         </div>

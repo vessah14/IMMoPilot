@@ -107,6 +107,8 @@ public class ImmeubleService(ImmoPilotDbContext db, IUtilisateurCourant moi, ISt
         immeuble.Quartier = r.Quartier.Trim();
         immeuble.NombreEtages = r.NombreEtages;
         immeuble.AnneeConstruction = r.AnneeConstruction;
+        immeuble.BeneficiaireNom = Beneficiaires.NomOuNull(r.BeneficiaireNom);
+        immeuble.BeneficiaireCompte = Beneficiaires.NumeroOuNull(r.BeneficiaireCompte);
     }
 
     // Transformation en DTO, calculée directement par la base (une seule requête SQL)
@@ -124,5 +126,7 @@ public class ImmeubleService(ImmoPilotDbContext db, IUtilisateurCourant moi, ISt
             i.DateCreation,
             i.PhotoUrl,
             i.Logements.Count,
-            i.Logements.Count(l => l.Statut == StatutLogement.Occupe)));
+            i.Logements.Count(l => l.Statut == StatutLogement.Occupe),
+            i.BeneficiaireNom,
+            i.BeneficiaireCompte));
 }

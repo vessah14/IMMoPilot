@@ -14,8 +14,9 @@ public static class InitialisationBase
         var db = scope.ServiceProvider.GetRequiredService<ImmoPilotDbContext>();
         var journal = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Initialisation");
 
-        // En développement, la base est mise à jour automatiquement (en production : dotnet ef database update)
-        if (app.Environment.IsDevelopment())
+        // Mise à jour automatique de la base : toujours en développement ;
+        // en ligne si Base:MigrerAuDemarrage = true (sinon : dotnet ef database update)
+        if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Base:MigrerAuDemarrage"))
             await db.Database.MigrateAsync();
 
         var parametres = await db.Parametres.FirstOrDefaultAsync();
@@ -25,6 +26,10 @@ public static class InitialisationBase
             db.Parametres.Add(parametres);
         }
 
+        // Lien de paiement pour les locataires créés avant cette fonctionnalité
+        foreach (var locataire in await db.Locataires.Where(l => l.JetonPaiement == null).ToListAsync())
+            locataire.JetonPaiement = PaiementLoyerService.NouveauJeton();
+
         await db.SaveChangesAsync();
 
         // Premier compte super administrateur, créé à partir de la configuration (user secrets / variables d'environnement)
@@ -32,6 +37,13 @@ public static class InitialisationBase
         var motDePasse = app.Configuration["SuperAdmin:MotDePasse"];
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(motDePasse)) return;
         if (await db.Utilisateurs.AnyAsync(u => u.Role == RoleUtilisateur.SuperAdmin)) return;
+
+        // En ligne, on refuse de créer le super administrateur avec un mot de passe faible
+        if (!app.Environment.IsDevelopment() && motDePasse.Length < 12)
+        {
+            journal.LogError("Super administrateur NON créé : SuperAdmin:MotDePasse doit contenir au moins 12 caractères en production.");
+            return;
+        }
 
         var admin = new Utilisateur
         {

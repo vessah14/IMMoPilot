@@ -1,0 +1,8 @@
+**/bin/
+**/obj/
+**/.vs/
+**/*.user
+**/appsettings.*.local.json
+**/.env
+README.md
+Dockerfile

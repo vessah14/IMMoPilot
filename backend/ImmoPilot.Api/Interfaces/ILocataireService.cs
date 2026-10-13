@@ -9,4 +9,6 @@ public interface ILocataireService
     Task<LocataireDto> CreerAsync(LocataireRequeteDto requete);
     Task<LocataireDto?> ModifierAsync(int id, LocataireRequeteDto requete);
     Task<bool> SupprimerAsync(int id);
+    Task<LocataireDto?> NouveauLienPaiementAsync(int id);
+    Task<bool> EnvoyerLienParEmailAsync(int id);
 }

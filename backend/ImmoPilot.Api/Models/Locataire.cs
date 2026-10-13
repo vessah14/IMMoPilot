@@ -7,6 +7,9 @@ public class Locataire
     public required string Email { get; set; }
     public required string Telephone { get; set; }
 
+    // Lien personnel de paiement du loyer (/payer/{jeton}) : secret, remplaçable par le bailleur
+    public string? JetonPaiement { get; set; }
+
     // Bail en cours
     public DateOnly DebutBail { get; set; }
     public DateOnly FinBail { get; set; }

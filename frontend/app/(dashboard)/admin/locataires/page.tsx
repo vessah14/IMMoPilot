@@ -83,7 +83,11 @@ export default async function Locataires() {
         </CarteStat>
       </div>
 
-      <ListeLocataires locataires={locataires} />
+      <ListeLocataires
+        locataires={locataires}
+        logementsVacants={vacants.map((l) => ({ id: l.id, libelle: `${l.reference} — ${l.immeuble}`, loyer: l.loyer }))}
+        compteEncaissement={moi.compteEncaissement}
+      />
     </section>
   );
 }

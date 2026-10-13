@@ -33,6 +33,7 @@ export type Utilisateur = {
   etatAbonnement: EtatAbonnement;
   notificationsNonLues: number;
   utilisation: { immeubles: number; limiteImmeubles: number | null; locataires: number; limiteLocataires: number | null };
+  compteEncaissement: string | null; // numéro Mobile Money qui reçoit les loyers payés en ligne (2376XXXXXXXX)
 };
 
 export type Immeuble = {
@@ -49,6 +50,8 @@ export type Immeuble = {
   photoUrl: string | null;
   nombreLogements: number;
   logementsOccupes: number;
+  beneficiaireNom: string | null; // propriétaire du bien qui reçoit les loyers en ligne
+  beneficiaireCompte: string | null;
 };
 
 export type Logement = {
@@ -63,6 +66,8 @@ export type Logement = {
   charges: number;
   statut: StatutLogement;
   locataire: string | null;
+  beneficiaireNom: string | null;
+  beneficiaireCompte: string | null;
 };
 
 export type Locataire = {
@@ -77,6 +82,9 @@ export type Locataire = {
   loyer: number;
   caution: number;
   situation: SituationPaiement;
+  jetonPaiement: string | null; // lien personnel de paiement : /payer/{jeton}
+  beneficiaireNom: string | null; // qui reçoit ses loyers payés en ligne (logement → immeuble → bailleur)
+  beneficiaireCompte: string | null;
 };
 
 export type Paiement = {
@@ -102,6 +110,7 @@ export type Echeance = {
   derniereRelance: string | null;
   telephone: string;
   email: string;
+  jetonPaiement: string | null;
 };
 
 export type MontantMensuel = { mois: string; montant: number };
@@ -180,4 +189,31 @@ export type Abonnement = {
   modeSimulation: boolean; // simulateur de paiement (développement) : aucun argent réel
   offres: { formule: Formule; prixMensuel: number; tarifs: { dureeMois: number; montant: number; moisOfferts: number }[] }[];
   historique: PaiementAbonnement[];
+};
+
+// ---- Page publique de paiement du loyer (/payer/{jeton}) ----
+
+export type MoisDu = { mois: string; du: number; paye: number; reste: number; statut: StatutEcheance };
+
+export type PaiementLoyer = {
+  id: number;
+  mois: string;
+  montant: number;
+  statut: StatutPaiement;
+  date: string;
+  operateur: string | null;
+  codeUssd: string | null;
+  reference: string | null;
+};
+
+export type PageLoyer = {
+  locataire: string;
+  logement: string | null;
+  bailleur: string;
+  telephoneBailleur: string;
+  loyerMensuel: number;
+  simulation: boolean;
+  verseA: string | null; // compte du bailleur qui reçoit le paiement ; null = paiement en ligne pas encore activé
+  moisDus: MoisDu[];
+  derniers: PaiementLoyer[];
 };

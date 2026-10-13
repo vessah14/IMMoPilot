@@ -38,6 +38,14 @@ namespace ImmoPilot.Api.Data.Migrations
                     b.Property<int?>("AnneeConstruction")
                         .HasColumnType("integer");
 
+                    b.Property<string>("BeneficiaireCompte")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("BeneficiaireNom")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
                     b.Property<DateTime>("DateCreation")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -111,6 +119,10 @@ namespace ImmoPilot.Api.Data.Migrations
                     b.Property<DateOnly>("FinBail")
                         .HasColumnType("date");
 
+                    b.Property<string>("JetonPaiement")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<int?>("LogementId")
                         .HasColumnType("integer");
 
@@ -133,6 +145,9 @@ namespace ImmoPilot.Api.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("JetonPaiement")
+                        .IsUnique();
+
                     b.HasIndex("LogementId");
 
                     b.HasIndex("ProprietaireId");
@@ -147,6 +162,14 @@ namespace ImmoPilot.Api.Data.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BeneficiaireCompte")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("BeneficiaireNom")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
 
                     b.Property<decimal>("Charges")
                         .HasPrecision(14, 2)
@@ -236,8 +259,17 @@ namespace ImmoPilot.Api.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("CompteVersement")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DateDemande")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateOnly>("DatePaiement")
                         .HasColumnType("date");
+
+                    b.Property<bool>("EnLigne")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("LocataireId")
                         .HasColumnType("integer");
@@ -497,6 +529,10 @@ namespace ImmoPilot.Api.Data.Migrations
                     b.Property<string>("Adresse")
                         .HasMaxLength(250)
                         .HasColumnType("character varying(250)");
+
+                    b.Property<string>("CompteEncaissement")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<DateTime>("DateInscription")
                         .ValueGeneratedOnAdd()

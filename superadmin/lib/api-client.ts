@@ -1,7 +1,8 @@
 // Appels à l'API depuis le navigateur (formulaires, boutons).
 // Le cookie de session httpOnly est envoyé automatiquement grâce à credentials: "include".
 
-export const API_URL_PUBLIQUE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5065";
+// Vide = même domaine que le site : les appels /api/… passent par le proxy de next.config.ts
+export const API_URL_PUBLIQUE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export class ErreurApi extends Error {
   constructor(

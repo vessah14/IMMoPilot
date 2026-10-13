@@ -18,6 +18,8 @@ public class AuthService(
     INotificationService notifications,
     IPasswordHasher<Utilisateur> hacheur,
     IEnvoiEmail emails,
+    IFileEmails fileEmails,
+    ModelesEmail modeles,
     IConfiguration configuration,
     TimeProvider horloge) : IAuthService
 {
@@ -39,6 +41,7 @@ public class AuthService(
             NomComplet = r.NomComplet.Trim(),
             Email = email,
             Telephone = r.Telephone.Trim(),
+            CompteEncaissement = CompteValide(r.CompteEncaissement),
             Role = RoleUtilisateur.Bailleur,
             Profil = r.Profil,
             NomStructure = string.IsNullOrWhiteSpace(r.NomStructure) ? null : r.NomStructure.Trim(),
@@ -55,6 +58,9 @@ public class AuthService(
         notifications.Ajouter(utilisateur.Id, TypeNotification.Systeme, $"Bienvenue sur {p.NomPlateforme} !",
             "Commencez par ajouter votre premier immeuble, puis ses logements et vos locataires.");
         await db.SaveChangesAsync();
+
+        fileEmails.Ajouter(modeles.Bienvenue(utilisateur.Email, utilisateur.NomComplet,
+            essai: utilisateur.FinAbonnement is not null, p.DureeEssaiJours));
         return utilisateur;
     }
 
@@ -110,7 +116,8 @@ public class AuthService(
                 await db.Immeubles.CountAsync(i => i.ProprietaireId == u.Id),
                 LimitesFormule.Immeubles(u.Formule),
                 await db.Locataires.CountAsync(l => l.ProprietaireId == u.Id && l.LogementId != null),
-                LimitesFormule.Locataires(u.Formule)));
+                LimitesFormule.Locataires(u.Formule)),
+            u.CompteEncaissement);
     }
 
     public async Task<UtilisateurDto> ModifierProfilAsync(ProfilDto r)
@@ -122,6 +129,7 @@ public class AuthService(
         u.Ville = string.IsNullOrWhiteSpace(r.Ville) ? null : r.Ville.Trim();
         u.Adresse = string.IsNullOrWhiteSpace(r.Adresse) ? null : r.Adresse.Trim();
         u.JourEcheance = r.JourEcheance;
+        if (!string.IsNullOrWhiteSpace(r.CompteEncaissement)) u.CompteEncaissement = CompteValide(r.CompteEncaissement);
         await db.SaveChangesAsync();
         return await MoiAsync();
     }
@@ -153,7 +161,7 @@ public class AuthService(
         var site = (role == RoleUtilisateur.SuperAdmin
             ? configuration["SuperAdmin:FrontendUrl"] ?? "http://localhost:3001"
             : configuration["Frontend:Url"] ?? "http://localhost:3000").TrimEnd('/');
-        await emails.EnvoyerAsync(u.Email, $"{p.NomPlateforme} : réinitialisation de votre mot de passe",
+        await emails.EnvoyerAsync(new EmailAEnvoyer(u.Email, $"{p.NomPlateforme} : réinitialisation de votre mot de passe",
             $"""
             Bonjour {u.NomComplet},
 
@@ -165,7 +173,7 @@ public class AuthService(
             Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail : votre mot de passe reste inchangé.
 
             L'équipe {p.NomPlateforme}
-            """);
+            """));
     }
 
     public async Task<Utilisateur> ReinitialiserMotDePasseAsync(ReinitialisationMotDePasseDto r, RoleUtilisateur role)
@@ -191,6 +199,10 @@ public class AuthService(
     private static string Empreinte(string jeton) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(jeton)));
 
     public Task<Utilisateur> CompteAsync() => db.Utilisateurs.AsNoTracking().FirstAsync(u => u.Id == moi.Id);
+
+    private static string CompteValide(string saisie) =>
+        Abonnements.NormaliserTelephone(saisie)
+        ?? throw new DonneesInvalidesException("Numéro de réception des loyers invalide : saisissez un numéro Orange Money ou MTN MoMo du Cameroun (ex : 677 12 34 56).");
 
     public static string NormaliserEmail(string email) => email.Trim().ToLowerInvariant();
 }

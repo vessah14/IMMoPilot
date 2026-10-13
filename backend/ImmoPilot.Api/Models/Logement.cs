@@ -2,6 +2,10 @@ namespace ImmoPilot.Api.Models;
 
 public class Logement
 {
+    // Propriétaire du bien qui reçoit les loyers payés en ligne (facultatif)
+    public string? BeneficiaireNom { get; set; }
+    public string? BeneficiaireCompte { get; set; } // numéro Mobile Money 2376XXXXXXXX
+
     public int Id { get; set; }
     public required string Reference { get; set; } // ex : "A-12", unique dans un immeuble
     public TypeLogement Type { get; set; }

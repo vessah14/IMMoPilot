@@ -8,7 +8,12 @@ using Microsoft.EntityFrameworkCore;
 namespace ImmoPilot.Api.Services;
 
 // Toutes les requêtes sont limitées aux paiements des locataires du bailleur connecté
-public class PaiementService(ImmoPilotDbContext db, IUtilisateurCourant moi, INotificationService notifications) : IPaiementService
+public class PaiementService(
+    ImmoPilotDbContext db,
+    IUtilisateurCourant moi,
+    INotificationService notifications,
+    IFileEmails fileEmails,
+    ModelesEmail modeles) : IPaiementService
 {
     private IQueryable<Paiement> MesPaiements => db.Paiements.Where(p => p.Locataire.ProprietaireId == moi.Id);
 
@@ -42,7 +47,33 @@ public class PaiementService(ImmoPilotDbContext db, IUtilisateurCourant moi, INo
                 $"{Dates.Fcfa(paiement.Montant)} encaissés pour {Dates.NomMois(paiement.Periode)}.");
 
         await db.SaveChangesAsync();
+        if (paiement.Statut == StatutPaiement.Confirme) await EnvoyerRecuAsync(paiement);
         return (await ObtenirAsync(paiement.Id))!;
+    }
+
+    // Reçu par e-mail au locataire (les réponses arrivent chez le bailleur)
+    private async Task EnvoyerRecuAsync(Paiement p)
+    {
+        var l = await db.Locataires.AsNoTracking().Where(x => x.Id == p.LocataireId)
+            .Select(x => new
+            {
+                x.Email,
+                x.NomComplet,
+                Logement = x.Logement == null ? "votre logement" : x.Logement.Reference + " · " + x.Logement.Immeuble.Nom,
+                x.JetonPaiement,
+                Bailleur = x.Proprietaire.NomStructure ?? x.Proprietaire.NomComplet,
+                EmailBailleur = x.Proprietaire.Email,
+            })
+            .FirstAsync();
+        var moyen = p.Moyen switch
+        {
+            MoyenPaiement.OrangeMoney => "Orange Money",
+            MoyenPaiement.MtnMomo => "MTN MoMo",
+            MoyenPaiement.Especes => "Espèces",
+            _ => "Virement",
+        };
+        fileEmails.Ajouter(modeles.RecuLoyer(l.Email, l.NomComplet, l.Logement, p.Montant, p.Periode, p.DatePaiement, moyen,
+            p.Reference, l.Bailleur, l.EmailBailleur, l.JetonPaiement));
     }
 
     public async Task<PaiementDto?> ModifierAsync(int id, PaiementRequeteDto requete)

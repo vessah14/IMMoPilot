@@ -43,35 +43,34 @@ Le chemin d'une requête : **Controller → Interface → Service → DbContext 
    L'API répond sur http://localhost:5065 (documentation : http://localhost:5065/openapi/v1.json).
    Le fichier `ImmoPilot.Api.http` contient des requêtes prêtes à tester.
 
-## Envoi d'e-mails de la plateforme (mot de passe oublié)
+## E-mails automatiques (via Brevo)
 
-Les relances de loyer ne passent pas par ici : sur la page Loyers, les boutons « E-mail » et « WhatsApp »
-ouvrent la messagerie ou le WhatsApp du propriétaire avec le message déjà écrit (il part de sa propre adresse).
+| Événement | Destinataire |
+|---|---|
+| Inscription | bailleur : bienvenue |
+| Nouveau locataire, logement attribué, nouveau lien | locataire : son lien de paiement du loyer |
+| Loyer enregistré par le bailleur (« Confirmé ») | locataire : reçu |
+| Loyer payé en ligne | locataire : reçu · bailleur : « Loyer reçu » |
+| Abonnement payé | bailleur : confirmation + n° de facture |
+| Mot de passe oublié | bailleur : lien de réinitialisation |
 
-Sans configuration, les e-mails ne partent pas : en développement, leur contenu (avec le lien
-« mot de passe oublié ») n'est jamais journalisé. Pour les envoyer vraiment, par exemple avec Gmail
-(créez d'abord un « mot de passe d'application » sur https://myaccount.google.com/apppasswords) :
+Les e-mails partent en arrière-plan (une panne de Brevo ne bloque ni une inscription ni un paiement).
+Pour un locataire, « Répondre » écrit directement au bailleur.
+Les relances de loyer, elles, partent de la messagerie ou du WhatsApp du propriétaire (page Loyers).
+
+Configuration Brevo (SMTP & API → onglet SMTP ; l'adresse d'envoi doit être validée dans Expéditeurs) :
 
 ```bash
-dotnet user-secrets set "Email:Hote" "smtp.gmail.com"
+dotnet user-secrets set "Email:Hote" "smtp-relay.brevo.com"
 dotnet user-secrets set "Email:Port" "587"
-dotnet user-secrets set "Email:Utilisateur" "votre.adresse@gmail.com"
-dotnet user-secrets set "Email:MotDePasse" "MOT_DE_PASSE_D_APPLICATION"
+dotnet user-secrets set "Email:Utilisateur" "xxxx@smtp-brevo.com"
+dotnet user-secrets set "Email:MotDePasse" "xsmtpsib-…"   # clé SMTP, pas la clé API
+dotnet user-secrets set "Email:Expediteur" "adresse.validee@exemple.com"
 dotnet user-secrets set "Email:NomExpediteur" "IMMO PILOT"
 ```
 
-En production, indiquez aussi les adresses publiques des deux interfaces : `Frontend:Url` pour les bailleurs et
-`SuperAdmin:FrontendUrl` pour le super administrateur. Elles servent à construire les liens de réinitialisation.
-Exemple de variables d''environnement : `Frontend__Url=https://immopilot.example.com` et
-`SuperAdmin__FrontendUrl=https://admin.immopilot.example.com`.
-
-Si l''API est derrière un reverse proxy (Nginx, Caddy, etc.), configurez son adresse IP de confiance pour que les
-limites de tentatives d''authentification utilisent l''adresse réelle du client :
-`ForwardedHeaders__KnownProxies__0=10.0.0.10`. N'ajoutez que les IP des proxies que vous contrôlez.
-
-Après mise à jour du backend, appliquez les migrations depuis `backend/ImmoPilot.Api` avec
-`dotnet ef database update`. La migration `CorrigePrixPro` remplace l''ancienne valeur de test de 25 FCFA par
-15 000 FCFA, tout en conservant tout autre tarif déjà enregistré.
+Sans configuration, les e-mails ne partent pas : en développement, leur contenu s'affiche dans la console de l'API.
+En production, indiquez l'adresse du site pour les liens : `Frontend:Url` (par défaut `http://localhost:3000`).
 
 ## Routes
 

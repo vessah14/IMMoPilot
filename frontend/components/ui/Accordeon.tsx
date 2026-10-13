@@ -7,7 +7,7 @@ const questions = [
   {
     question: "À qui s’adresse IMMOPILOT ?",
     reponse:
-      "IMMOPILOT est conçu pour les propriétaires bailleurs qui veulent gérer leurs immeubles, leurs locataires et leurs loyers depuis une seule plateforme. La formule Enterprise s’adresse aussi aux agences immobilières.",
+      "IMMOPILOT est conçu pour les propriétaires bailleurs qui veulent gérer leurs immeubles, leurs locataires et leurs loyers depuis une seule plateforme. Il convient aussi aux agences, qui peuvent indiquer le propriétaire de chaque immeuble ou logement : les loyers payés en ligne lui sont versés directement.",
   },
   {
     question: "Puis-je essayer IMMOPILOT gratuitement ?",
@@ -22,27 +22,27 @@ const questions = [
   {
     question: "Comment IMMOPILOT m’aide-t-il à suivre les loyers ?",
     reponse:
-      "Vous pouvez suivre les loyers depuis votre espace. Selon la formule, vous disposez aussi de relances automatiques. La plateforme présente également l’indexation des loyers selon l’indice IRL de l’INSEE.",
+      "Chaque mois, IMMOPILOT indique les loyers payés, partiels ou en retard. Vous relancez un locataire par e-mail ou WhatsApp en un clic, et il peut payer en ligne avec son lien personnel (Orange Money ou MTN MoMo).",
   },
   {
-    question: "Puis-je gérer les contrats et les demandes de maintenance ?",
+    question: "Que reçoivent mes locataires ?",
     reponse:
-      "Oui. IMMOPILOT centralise les informations des locataires et des contrats, et permet de recevoir et suivre les demandes d’intervention jusqu’à leur résolution.",
+      "À leur arrivée, un e-mail avec leur lien personnel de paiement. Après chaque loyer réglé, en ligne ou enregistré par vous, un reçu par e-mail. Pour vous répondre, il leur suffit de répondre à l’e-mail.",
   },
   {
     question: "Quels rapports financiers sont disponibles ?",
     reponse:
-      "Les formules Pro et Enterprise incluent des rapports financiers. La plateforme présente aussi la préparation assistée des déclarations 2044 et 2072, ainsi que l’export FEC pour votre expert-comptable.",
+      "La page Rapports présente vos revenus sur 12 mois, le taux d’occupation et les impayés. Immeubles, locataires, paiements et loyers s’exportent en CSV, à ouvrir dans Excel.",
   },
   {
     question: "Comment choisir une formule ?",
     reponse:
-      "Choisissez Starter pour commencer avec un petit parc, Pro pour davantage d’immeubles et de fonctions de gestion, ou Enterprise pour des volumes illimités et une équipe. Consultez les tarifs affichés sur cette page ou contactez l’équipe pour Enterprise.",
+      "Choisissez Starter pour commencer avec un petit parc, Pro pour davantage d’immeubles et de fonctions de gestion, ou Enterprise pour des volumes illimités et une équipe. Vous pouvez changer de formule à tout moment depuis Paramètres → Abonnement.",
   },
   {
     question: "Comment contacter le support ?",
     reponse:
-      "Le support par email est inclus dans la formule Pro. Les clients Enterprise bénéficient d’un support prioritaire 24/7. Pour contacter l’équipe au sujet de cette formule, écrivez à support@immopilot.cm.",
+      "Depuis votre espace : Paramètres → Support. Vous suivez la réponse de l’équipe au même endroit.",
   },
 ];
 

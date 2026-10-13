@@ -11,7 +11,9 @@ public record InscriptionDto(
     [Required(ErrorMessage = "Le profil est obligatoire.")] ProfilGestion? Profil,
     [StringLength(150)] string? NomStructure,
     [Required(ErrorMessage = "La ville est obligatoire."), StringLength(100)] string Ville,
-    [Required(ErrorMessage = "La formule est obligatoire.")] Formule? Formule);
+    [Required(ErrorMessage = "La formule est obligatoire.")] Formule? Formule,
+    // Numéro Orange Money / MTN MoMo qui reçoit les loyers payés en ligne
+    [Required(ErrorMessage = "Le numéro Mobile Money de réception des loyers est obligatoire."), StringLength(30)] string CompteEncaissement);
 
 public record ConnexionDto(
     [Required(ErrorMessage = "L'e-mail est obligatoire."), EmailAddress(ErrorMessage = "L'e-mail n'est pas valide.")] string Email,
@@ -23,7 +25,8 @@ public record ProfilDto(
     [StringLength(150)] string? NomStructure,
     [StringLength(100)] string? Ville,
     [StringLength(250)] string? Adresse,
-    [Range(1, 28, ErrorMessage = "Le jour d'échéance doit être entre 1 et 28.")] int JourEcheance);
+    [Range(1, 28, ErrorMessage = "Le jour d'échéance doit être entre 1 et 28.")] int JourEcheance,
+    [StringLength(30)] string? CompteEncaissement = null); // null : inchangé
 
 public record ChangementMotDePasseDto(
     [Required(ErrorMessage = "Le mot de passe actuel est obligatoire.")] string MotDePasseActuel,
@@ -56,4 +59,5 @@ public record UtilisateurDto(
     DateTime? FinAbonnement, // null : formule gratuite, sans échéance
     EtatAbonnement EtatAbonnement,
     int NotificationsNonLues,
-    UtilisationDto Utilisation);
+    UtilisationDto Utilisation,
+    string? CompteEncaissement); // numéro Mobile Money de réception des loyers

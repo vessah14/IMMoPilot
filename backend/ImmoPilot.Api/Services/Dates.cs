@@ -19,6 +19,13 @@ public static class Dates
         new(mois.Year, mois.Month, Math.Clamp(jourEcheance, 1, 28));
 
     // Textes en français, quelle que soit la langue du serveur
+    // « de septembre 2026 », « d'octobre 2026 » (élision devant avril, août, octobre)
+    public static string DuMois(DateOnly mois)
+    {
+        var nom = NomMois(mois);
+        return "aeiouyéâ".Contains(char.ToLowerInvariant(nom[0])) ? $"d'{nom}" : $"de {nom}";
+    }
+
     public static string NomMois(DateOnly mois) => mois.ToString("MMMM yyyy", Francais);
 
     public static string Fcfa(decimal montant) => $"{montant.ToString("N0", Francais)} FCFA";

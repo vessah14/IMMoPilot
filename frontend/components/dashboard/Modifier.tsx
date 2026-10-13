@@ -3,6 +3,7 @@
 import { Pencil } from "lucide-react";
 import Input, { styleChamp } from "@/components/ui/Input";
 import FormulaireModal, { ChampSelect } from "@/components/ui/FormulaireModal";
+import ChampsBeneficiaire from "@/components/dashboard/ChampsBeneficiaire";
 import { apiClient } from "@/lib/api-client";
 import { fcfa, libellesMoyen, libellesTypeImmeuble, libellesTypeLogement } from "@/lib/format";
 import type { Immeuble, Locataire, Logement, Paiement } from "@/lib/types";
@@ -45,6 +46,8 @@ export function ModifierImmeuble({ element: i, onFermer }: Props<Immeuble>) {
         quartier: d.get("quartier"),
         nombreEtages: nombre("etages"),
         anneeConstruction: nombre("annee"),
+        beneficiaireNom: d.get("beneficiaireNom") || null,
+        beneficiaireCompte: d.get("beneficiaireCompte") || null,
       },
     });
   };
@@ -66,6 +69,7 @@ export function ModifierImmeuble({ element: i, onFermer }: Props<Immeuble>) {
       <Input id="m-quartier" name="quartier" label="Quartier" defaultValue={i.quartier} required />
       <Input id="m-etages" name="etages" label="Nombre d'étages" type="number" min={0} defaultValue={i.nombreEtages ?? ""} />
       <Input id="m-annee" name="annee" label="Année de construction" type="number" min={1900} max={2100} defaultValue={i.anneeConstruction ?? ""} />
+      <ChampsBeneficiaire prefixe="m-" nom={i.beneficiaireNom} compte={i.beneficiaireCompte} aide="Laissez vide si les loyers vous reviennent : ils arriveront sur votre numéro (Paramètres → Agence). Chaque logement peut aussi avoir son propre propriétaire." />
     </FormulaireModal>
   );
 }
@@ -84,6 +88,8 @@ export function ModifierLogement({ element: l, onFermer }: Props<Logement>) {
         loyer: Number(d.get("loyer")),
         charges: Number(d.get("charges") || 0),
         statut: occupe ? null : d.get("statut"), // « Occupé » dépend du locataire, pas du formulaire
+        beneficiaireNom: d.get("beneficiaireNom") || null,
+        beneficiaireCompte: d.get("beneficiaireCompte") || null,
       },
     });
   };
@@ -115,11 +121,16 @@ export function ModifierLogement({ element: l, onFermer }: Props<Logement>) {
           defaut={l.statut}
         />
       )}
+      <ChampsBeneficiaire prefixe="m-" nom={l.beneficiaireNom} compte={l.beneficiaireCompte} aide="Laissez vide pour utiliser le propriétaire de l'immeuble, ou à défaut votre numéro (Paramètres → Agence)." />
     </FormulaireModal>
   );
 }
 
-export function ModifierLocataire({ element: l, onFermer }: Props<Locataire>) {
+export function ModifierLocataire({
+  element: l,
+  logementsVacants,
+  onFermer,
+}: Props<Locataire> & { logementsVacants: { id: number; libelle: string; loyer: number }[] }) {
   const enregistrer = async (d: FormData) => {
     await apiClient(`/locataires/${l.id}`, {
       methode: "PUT",
@@ -127,7 +138,7 @@ export function ModifierLocataire({ element: l, onFermer }: Props<Locataire>) {
         nomComplet: d.get("nom"),
         email: d.get("email"),
         telephone: d.get("telephone"),
-        logementId: l.logementId, // le logement ne change pas ici (départ : bouton « Libérer »)
+        logementId: d.get("logement") ? Number(d.get("logement")) : null, // vide = aucun logement (départ)
         debutBail: d.get("debutBail"),
         finBail: d.get("finBail"),
         loyer: Number(d.get("loyer")),
@@ -143,9 +154,23 @@ export function ModifierLocataire({ element: l, onFermer }: Props<Locataire>) {
       <div className="sm:col-span-2">
         <Input id="m-email" name="email" label="Adresse e-mail" type="email" defaultValue={l.email} required />
       </div>
-      <p className="sm:col-span-2 text-sm text-gray-500">
-        Logement : <span className="font-medium text-gray-900">{l.logement ?? "aucun (parti)"}</span>
-      </p>
+      <div className="sm:col-span-2 w-full space-y-2">
+        <label htmlFor="m-logement" className="block text-sm font-medium text-gray-700">
+          Logement attribué
+        </label>
+        <select id="m-logement" name="logement" defaultValue={l.logementId ?? ""} className={styleChamp}>
+          {l.logementId !== null && <option value={l.logementId}>{l.logement} (actuel)</option>}
+          {logementsVacants.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.libelle} — {fcfa(v.loyer)} (libre)
+            </option>
+          ))}
+          <option value="">Aucun logement (locataire parti)</option>
+        </select>
+        {logementsVacants.length === 0 && l.logementId === null && (
+          <p className="text-xs text-gray-500">Aucun logement libre : ajoutez-en un ou libérez-en un depuis la page Logements.</p>
+        )}
+      </div>
       <Input id="m-debutBail" name="debutBail" label="Début du bail" type="date" defaultValue={l.debutBail} required />
       <Input id="m-finBail" name="finBail" label="Fin du bail" type="date" defaultValue={l.finBail} required />
       <Input id="m-loyer" name="loyer" label="Loyer mensuel (FCFA)" type="number" min={0} defaultValue={l.loyer} required />

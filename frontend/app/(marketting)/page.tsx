@@ -10,7 +10,7 @@ import {
   Building2,
   Wallet,
   Users,
-  Wrench,
+  Smartphone,
   FileText,
   BarChart3,
 } from "lucide-react";
@@ -51,8 +51,8 @@ function Hero() {
           <span className="text-blue-400">Gardez le contrôle.</span>
         </h1>
         <p className="text-lg text-gray-300 max-w-2xl mt-6 animate-apparition [animation-delay:300ms] motion-reduce:animate-none">
-          Loyers, locataires, contrats, maintenance — tout centralisé dans une
-          seule plateforme. Simple, rapide, efficace.
+          Immeubles, locataires, loyers et paiements Orange Money / MTN MoMo :
+          tout centralisé dans une seule plateforme. Simple, rapide, efficace.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 mt-10 w-full sm:w-auto max-w-sm sm:max-w-none animate-apparition [animation-delay:450ms] motion-reduce:animate-none">
           <Link href="/inscription" className="bg-blue-600 text-white px-8 py-3.5 rounded-full text-lg font-semibold hover:bg-blue-700 transition shadow-lg shadow-blue-600/30 text-center">
@@ -65,7 +65,7 @@ function Hero() {
         <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-12 text-gray-400 text-sm [&>span]:whitespace-nowrap animate-apparition [animation-delay:600ms] motion-reduce:animate-none">
           <span>✅ Gratuit 14 jours</span>
           <span>✅ Sans carte bancaire</span>
-          <span>✅ Support 24/7</span>
+          <span>✅ Paiement Mobile Money</span>
         </div>
       </div>
     </div>
@@ -77,36 +77,37 @@ const fonctionnalites = [
     icon: Building2,
     title: "Gestion des immeubles",
     description:
-      "Vue cadastrale et technique, suivi des diagnostics énergétiques (DPE), gestion structurée des parties communes et carnet d'entretien des travaux.",
+      "Immeubles et logements avec photos, statut de chaque logement (libre, occupé, en travaux) et propriétaire de chaque bien.",
   },
   {
     icon: Wallet,
     title: "Suivi des loyers",
     description:
-      "Indexation automatique selon l'indice officiel IRL de l'INSEE, émission automatisée des avis d'échéance par email et SMS en un clic.",
+      "Échéancier du mois : loyers payés, partiels ou en retard, et relance du locataire par e-mail ou WhatsApp en un clic.",
   },
   {
     icon: Users,
     title: "Gestion des locataires",
     description:
-      "Dossiers dématérialisés certifiés, baux numériques conformes loi Alur, états des lieux interactifs sur tablette et quittances instantanées.",
+      "Fiches locataires, dates de bail, attribution des logements, historique des paiements et reçus envoyés automatiquement par e-mail.",
   },
   {
-    icon: Wrench,
-    title: "Maintenance",
-    description: "Recevez et suivez les demandes d'intervention jusqu'à leur résolution.",
+    icon: Smartphone,
+    title: "Paiement en ligne",
+    description:
+      "Chaque locataire reçoit un lien personnel pour payer son loyer par Orange Money ou MTN MoMo, versé au propriétaire du logement.",
   },
   {
     icon: FileText,
     title: "Notifications & Alertes",
     description:
-      "Rappels d'échéance de baux, alertes de révision annuelle, détection d'assurances locatives expirées et suivi centralisé des requêtes SAV.",
+      "Notification à chaque loyer payé, retard ou nouveau locataire, et rappel avant l'échéance de votre abonnement.",
   },
   {
     icon: BarChart3,
     title: "Rapports financiers",
     description:
-      "Bilan comptable en un clic, préparation assistée des déclarations 2044 et 2072, export FEC expert-comptable et suivi du cash-flow réel.",
+      "Revenus des 12 derniers mois, taux d'occupation, loyers impayés et export de vos données en CSV (Excel).",
   },
 ];
 

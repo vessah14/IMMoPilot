@@ -43,6 +43,16 @@ export async function apiPublic<T>(chemin: string, revalidation?: number): Promi
   }
 }
 
+// Appel sans connexion qui distingue « introuvable » (null) d'« API arrêtée » (erreur → page « Réessayer »)
+export async function apiPublicOuIntrouvable<T>(chemin: string): Promise<T | null> {
+  const reponse = await fetch(`${API_URL}/api${chemin}`, { cache: "no-store" }).catch(() => {
+    throw new Error(`L'API IMMO PILOT ne répond pas (${API_URL}). Est-elle démarrée ? (dotnet run --launch-profile http)`);
+  });
+  if (reponse.status === 404) return null;
+  if (!reponse.ok) throw new Error(`Erreur ${reponse.status} de l'API IMMO PILOT`);
+  return (await reponse.json()) as T;
+}
+
 // Utilisateur connecté, mémorisé pendant le rendu d'une page (plusieurs composants peuvent l'appeler)
 export const utilisateurConnecte = cache(() => apiServeur<Utilisateur>("/auth/moi"));
 

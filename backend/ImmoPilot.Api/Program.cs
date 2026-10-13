@@ -40,13 +40,24 @@ builder.Services.AddScoped<IRapportService, RapportService>();
 builder.Services.AddScoped<ISupportService, SupportService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddHttpClient<IStockagePhotos, CloudinaryService>();
-// Paiements : vrai CamPay, ou simulateur (sans argent réel) en développement si Campay:Simulation = true
-if (builder.Environment.IsDevelopment() && builder.Configuration.GetValue<bool>("Campay:Simulation"))
-    builder.Services.AddSingleton<ICampayService, SimulateurCampay>();
+// Paiements : vrai CamPay, ou simulateur (sans argent réel) :
+// - en développement si Campay:Simulation = true ;
+// - en ligne si Demo:Actif = true (site de démonstration / portfolio : aucun argent réel ne circule).
+// Les loyers payés par les locataires passent toujours par le simulateur (compte d'encaissement pas encore choisi).
+builder.Services.AddSingleton<SimulateurCampay>();
+builder.Services.AddScoped<IPaiementLoyerService, PaiementLoyerService>();
+var modeDemo = builder.Configuration.GetValue<bool>("Demo:Actif");
+if (modeDemo || (builder.Environment.IsDevelopment() && builder.Configuration.GetValue<bool>("Campay:Simulation")))
+    builder.Services.AddSingleton<ICampayService>(sp => sp.GetRequiredService<SimulateurCampay>());
 else
     builder.Services.AddHttpClient<ICampayService, CampayService>(c => c.Timeout = TimeSpan.FromSeconds(30));
 builder.Services.AddScoped<IAbonnementService, AbonnementService>();
 builder.Services.AddSingleton<IEnvoiEmail, EmailService>();
+// E-mails automatiques (bienvenue, lien locataire, reçus, abonnement) : envoyés en arrière-plan
+builder.Services.AddSingleton<ModelesEmail>();
+builder.Services.AddSingleton<FileEmails>();
+builder.Services.AddSingleton<IFileEmails>(sp => sp.GetRequiredService<FileEmails>());
+builder.Services.AddHostedService<EnvoiEmailsEnFond>();
 builder.Services.AddHostedService<TacheAbonnements>();
 
 // ---- Authentification JWT ----
@@ -107,6 +118,10 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("authentification", contexte => RateLimitPartition.GetFixedWindowLimiter(
         contexte.Connection.RemoteIpAddress?.ToString() ?? "inconnue",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1) }));
+    // Page publique de paiement du loyer : 60 requêtes par minute et par adresse IP (la page interroge le statut toutes les 4 s)
+    options.AddPolicy("paiement-public", contexte => RateLimitPartition.GetFixedWindowLimiter(
+        contexte.Connection.RemoteIpAddress?.ToString() ?? "inconnue",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 60, Window = TimeSpan.FromMinutes(1) }));
 });
 
 // Déclare les adresses de proxy autorisées à transmettre l'adresse client.
@@ -119,10 +134,21 @@ var optionsTransferees = new Microsoft.AspNetCore.Builder.ForwardedHeadersOption
 };
 foreach (var proxy in proxyConnus)
     if (IPAddress.TryParse(proxy, out var adresse)) optionsTransferees.KnownProxies.Add(adresse);
+// Hébergeurs (Render, Railway, Azure…) : leurs proxys changent d'adresse IP. Avec
+// ForwardedHeaders:FaireConfianceAuxProxys = true, l'API lit le vrai protocole (https) et l'IP du visiteur
+// dans X-Forwarded-Proto / X-Forwarded-For. Sans cela : redirection HTTPS en boucle et une seule
+// limite de tentatives de connexion partagée par tous les visiteurs.
+var faireConfianceAuxProxys = builder.Configuration.GetValue<bool>("ForwardedHeaders:FaireConfianceAuxProxys");
 builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = optionsTransferees.ForwardedHeaders;
     foreach (var proxy in optionsTransferees.KnownProxies) options.KnownProxies.Add(proxy);
+    if (faireConfianceAuxProxys)
+    {
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+        options.ForwardLimit = null; // chaîne complète (site Next → proxy de l'hébergeur → API) : IP d'origine du visiteur
+    }
 });
 
 // ---- Contrôleurs + JSON : les enums sont envoyés en texte ("Occupe" plutôt que 1) ----

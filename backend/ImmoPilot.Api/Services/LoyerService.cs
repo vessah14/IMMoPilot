@@ -30,6 +30,7 @@ public class LoyerService(
                 l.NomComplet,
                 l.Telephone,
                 l.Email,
+                l.JetonPaiement,
                 Logement = l.Logement!.Reference + " · " + l.Logement.Immeuble.Nom,
                 l.Loyer,
                 DerniereRelance = l.Relances.Where(r => r.Periode == periode).Max(r => (DateTime?)r.Date),
@@ -42,7 +43,7 @@ public class LoyerService(
         {
             var paye = payes.GetValueOrDefault((b.Id, periode));
             return new EcheanceDto(b.Id, b.NomComplet, b.Logement, b.Loyer, paye,
-                Soldes.Statut(b.Loyer, paye, periode, moisCourant), b.DerniereRelance, b.Telephone, b.Email);
+                Soldes.Statut(b.Loyer, paye, periode, moisCourant), b.DerniereRelance, b.Telephone, b.Email, b.JetonPaiement);
         }).ToList();
     }
 
