@@ -5,6 +5,8 @@ import type { NextConfig } from "next";
 const API_URL = process.env.API_URL ?? "http://localhost:5065";
 
 const nextConfig: NextConfig = {
+  // Image Docker légère : .next/standalone contient le serveur et seulement les dépendances utiles
+  output: "standalone",
   images: {
     // Photos des immeubles hébergées sur Cloudinary
     remotePatterns: [new URL("https://res.cloudinary.com/**")],

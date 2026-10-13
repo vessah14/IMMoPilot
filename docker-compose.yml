@@ -1,0 +1,76 @@
+# IMMO PILOT complet en local avec Docker : PostgreSQL + API + site + super admin
+#   1. copier .env.example en .env et remplir les valeurs
+#   2. docker compose up --build
+#   3. site : http://localhost:3000 · super admin : http://localhost:3001 · API : http://localhost:5065/api/offre
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: immopilot
+      POSTGRES_USER: immopilot
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Renseignez POSTGRES_PASSWORD dans .env}
+    volumes:
+      - donnees-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U immopilot -d immopilot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__ImmoPilot: "Host=db;Port=5432;Database=immopilot;Username=immopilot;Password=${POSTGRES_PASSWORD}"
+      Jwt__Cle: ${JWT_CLE:?Renseignez JWT_CLE dans .env (64 caractères aléatoires)}
+      Base__MigrerAuDemarrage: "true"
+      Demo__Actif: "true"
+      Frontend__Url: http://localhost:3000
+      Cors__Origines__0: http://localhost:3000
+      Cors__Origines__1: http://localhost:3001
+      SuperAdmin__Email: ${SUPERADMIN_EMAIL:-admin@immopilot.local}
+      SuperAdmin__MotDePasse: ${SUPERADMIN_MOT_DE_PASSE:?Renseignez SUPERADMIN_MOT_DE_PASSE dans .env (12 caractères minimum)}
+      # Facultatif : e-mails (Brevo) et photos (Cloudinary) ; vides = désactivés
+      Email__Hote: ${EMAIL_HOTE:-}
+      Email__Port: ${EMAIL_PORT:-587}
+      Email__Utilisateur: ${EMAIL_UTILISATEUR:-}
+      Email__MotDePasse: ${EMAIL_MOT_DE_PASSE:-}
+      Email__Expediteur: ${EMAIL_EXPEDITEUR:-}
+      Email__NomExpediteur: IMMO PILOT
+      Cloudinary__CloudName: ${CLOUDINARY_CLOUD_NAME:-}
+      Cloudinary__ApiKey: ${CLOUDINARY_API_KEY:-}
+      Cloudinary__ApiSecret: ${CLOUDINARY_API_SECRET:-}
+    ports:
+      - "5065:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        API_URL: http://api:8080
+        NEXT_PUBLIC_SITE_URL: http://localhost:3000
+        NEXT_PUBLIC_MODE_DEMO: "true"
+    environment:
+      API_URL: http://api:8080
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+
+  superadmin:
+    build:
+      context: ./superadmin
+      args:
+        API_URL: http://api:8080
+    environment:
+      API_URL: http://api:8080
+    depends_on:
+      - api
+    ports:
+      - "3001:3001"
+
+volumes:
+  donnees-postgres:

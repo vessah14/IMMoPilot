@@ -71,6 +71,22 @@ cd frontend && npm install && npm run dev
 cd superadmin && npm install && npm run dev
 ```
 
+## Lancer avec Docker (tout le projet en une commande)
+
+```bash
+cp .env.example .env        # puis remplir POSTGRES_PASSWORD, JWT_CLE, SUPERADMIN_MOT_DE_PASSE
+docker compose up --build
+```
+
+| Service | Adresse |
+|---|---|
+| Site | http://localhost:3000 |
+| Super admin | http://localhost:3001 |
+| API | http://localhost:5065/api/offre |
+
+Quatre conteneurs : `db` (PostgreSQL 17), `api` (`backend/Dockerfile`), `frontend` et `superadmin`
+(`Dockerfile` Next.js « standalone »). Les tables sont créées au démarrage et le mode démo est activé.
+
 ## Mise en ligne (gratuite)
 
 | Partie | Hébergeur conseillé |

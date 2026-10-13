@@ -5,6 +5,8 @@ import type { NextConfig } from "next";
 const API_URL = process.env.API_URL ?? "http://localhost:5065";
 
 const nextConfig: NextConfig = {
+  // Image Docker légère : .next/standalone contient le serveur et seulement les dépendances utiles
+  output: "standalone",
   // Le navigateur appelle /api/… sur le domaine du site, et Next transmet à l'API.
   // Ainsi le cookie de session appartient au domaine du site : la connexion fonctionne même
   // quand le site et l'API sont hébergés sur deux domaines différents (Vercel + Render…).
