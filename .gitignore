@@ -1,0 +1,39 @@
+# IMMO PILOT : fichiers à ne jamais envoyer sur GitHub
+# (backend/, frontend/ et superadmin/ ont aussi leur propre .gitignore)
+
+# ---- Secrets ----
+# Les mots de passe et clés vont dans les « user secrets » .NET ou des variables d'environnement, jamais dans le code
+.env
+.env.*
+!.env.example
+*.pem
+*.pfx
+*.key
+secrets.json
+appsettings.*.local.json
+
+# ---- Dépendances et compilations ----
+node_modules/
+.next/
+out/
+build/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+bin/
+obj/
+publish/
+
+# ---- Éditeurs et système ----
+.vs/
+.idea/
+*.user
+*.suo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Journaux ----
+*.log
+npm-debug.log*
+logs/

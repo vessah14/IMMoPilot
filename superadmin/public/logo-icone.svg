@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 572 479" role="img" aria-label="IMMO PILOT">
+  <defs>
+    <linearGradient id="p" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1a78e6"/>
+      <stop offset="0.5" stop-color="#0d4aa6"/>
+      <stop offset="1" stop-color="#08214f"/>
+    </linearGradient>
+    <linearGradient id="bat" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1a5cc2"/>
+      <stop offset="1" stop-color="#0a1d45"/>
+    </linearGradient>
+    <linearGradient id="vague" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#1683ea"/>
+      <stop offset="0.55" stop-color="#0e5fd0"/>
+      <stop offset="1" stop-color="#1e90ff"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#p)" fill-rule="evenodd" d="M85,14 Q85,0 99,0 H300 C415,0 492,78 492,180 V222 L170,352 H85 Z M150,72 H292 C375,72 428,122 428,182 V238 L150,340 Z"/>
+  <path fill="#08214f" d="M85,395 H172 V440 L85,478 Z"/>
+  <path fill="url(#bat)" d="M160,180 L211,143 V312 L160,318 Z"/>
+  <path fill="url(#bat)" d="M228,130 L285,97 L346,126 V282 L228,306 Z"/>
+  <path fill="url(#bat)" d="M360,176 L392,194 V246 L360,262 Z"/>
+  <path fill="none" stroke="#fff" stroke-width="6" d="M242,304 V190 L296,150 V288"/>
+  <rect x="253" y="193" width="29" height="36" fill="#fff"/>
+  <rect x="256" y="196" width="10" height="13" fill="#0a1d45"/>
+  <rect x="269" y="196" width="10" height="13" fill="#0a1d45"/>
+  <rect x="256" y="213" width="10" height="13" fill="#0a1d45"/>
+  <rect x="269" y="213" width="10" height="13" fill="#0a1d45"/>
+  <path fill="url(#vague)" d="M70,238 C10,280 -12,360 72,378 C200,400 400,330 494,206 L470,194 C428,242 356,288 228,316 C170,329 112,334 88,324 C55,308 50,272 70,238 Z"/>
+  <path fill="#1e90ff" d="M482,184 L572,155 L522,242 L517,200 Z"/>
+</svg>

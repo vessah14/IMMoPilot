@@ -1,0 +1,70 @@
+# Requêtes de test : dans VS Code (extension REST Client) ou Visual Studio, cliquez sur « Send Request ».
+@api = http://localhost:5065/api
+
+### Créer un immeuble
+POST {{api}}/immeubles
+Content-Type: application/json
+
+{
+  "nom": "Résidence Les Palmiers",
+  "type": "Residentiel",
+  "adresse": "Rue 1.234, face pharmacie",
+  "ville": "Yaoundé",
+  "quartier": "Bastos",
+  "nombreEtages": 3,
+  "anneeConstruction": 2018
+}
+
+### Lister les immeubles
+GET {{api}}/immeubles
+
+### Créer un logement dans l'immeuble 1
+POST {{api}}/logements
+Content-Type: application/json
+
+{
+  "immeubleId": 1,
+  "reference": "A-02",
+  "type": "T2",
+  "etage": 1,
+  "surface": 45,
+  "loyer": 85000,
+  "charges": 5000
+}
+
+### Lister les logements vacants
+GET {{api}}/logements?statut=Vacant
+
+### Créer un locataire dans le logement 1 (le logement passe à "Occupe")
+POST {{api}}/locataires
+Content-Type: application/json
+
+{
+  "nomComplet": "Jean Dupont",
+  "email": "jean.dupont@gmail.com",
+  "telephone": "699 45 67 89",
+  "logementId": 1,
+  "debutBail": "2026-01-01",
+  "finBail": "2026-12-31",
+  "loyer": 85000,
+  "caution": 170000
+}
+
+### Enregistrer un paiement Orange Money
+POST {{api}}/paiements
+Content-Type: application/json
+
+{
+  "locataireId": 1,
+  "montant": 85000,
+  "datePaiement": "2026-09-27",
+  "periode": "2026-09-01",
+  "moyen": "OrangeMoney",
+  "reference": "OM-260927-4412"
+}
+
+### Paiements de septembre 2026
+GET {{api}}/paiements?mois=2026-09-01
+
+### Supprimer l'immeuble 1 → 409 tant qu'il a des logements
+DELETE {{api}}/immeubles/1
