@@ -99,7 +99,7 @@ Quatre conteneurs : `db` (PostgreSQL 17), `api` (`backend/Dockerfile`), `fronten
 
 | Variable | Valeur |
 |---|---|
-| `ConnectionStrings__ImmoPilot` | chaîne de connexion PostgreSQL de Neon / Supabase |
+| `ConnectionStrings__ImmoPilot` | l'adresse PostgreSQL telle que donnée par Neon / Supabase (`postgresql://…`) ou au format `Host=…;Database=…` |
 | `Jwt__Cle` | clé aléatoire d'au moins 64 caractères |
 | `Cors__Origines__0`, `Cors__Origines__1` | adresses du site et du super admin |
 | `Frontend__Url` | adresse du site (liens des e-mails) |

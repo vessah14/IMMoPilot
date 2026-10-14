@@ -16,8 +16,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 // ---- Base de données (PostgreSQL) ----
 // La chaîne de connexion complète (avec le mot de passe) est dans les "user secrets", pas dans le code (voir README).
-var connexion = builder.Configuration.GetConnectionString("ImmoPilot")
-    ?? throw new InvalidOperationException("Chaîne de connexion « ImmoPilot » manquante (voir README).");
+// Lecture tolérante : format Host=… ou adresse postgresql://… de Neon, guillemets et lignes en trop ignorés
+var connexion = ChaineConnexion.Normaliser(builder.Configuration.GetConnectionString("ImmoPilot"),
+    LoggerFactory.Create(l => l.AddConsole()).CreateLogger("Configuration"));
 builder.Services.AddDbContext<ImmoPilotDbContext>(options => options.UseNpgsql(connexion));
 
 // ---- Services : une interface → une implémentation ----
