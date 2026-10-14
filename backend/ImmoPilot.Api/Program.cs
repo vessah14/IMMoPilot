@@ -254,6 +254,9 @@ app.MapControllers();
         : $"SMTP {c["Email:Hote"]}:{c["Email:Port"] ?? "587"}, identifiant {(string.IsNullOrWhiteSpace(c["Email:Utilisateur"]) ? "ABSENT" : "présent")}, " +
           $"clé {(string.IsNullOrWhiteSpace(c["Email:MotDePasse"]) ? "ABSENTE" : "présente")}, expéditeur …@{expediteur.Split('@').LastOrDefault()}";
     app.Logger.LogWarning("E-mails : {Etat}", etatEmails);
+    app.Logger.LogWarning("Liens des e-mails : {Site}", AdressesSites.Site(c));
+    if (!app.Environment.IsDevelopment() && AdressesSites.PointeVersLocalhost(c))
+        app.Logger.LogError("Les liens des e-mails pointent vers localhost : renseignez Frontend__Url (adresse publique du site).");
 }
 
 await InitialisationBase.ExecuterAsync(app);

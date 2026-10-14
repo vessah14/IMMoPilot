@@ -7,7 +7,7 @@ namespace ImmoPilot.Api.Services;
 public class ModelesEmail(IConfiguration configuration)
 {
     // Adresse du site, pour les liens des e-mails (en production : Frontend:Url = https://votre-domaine)
-    public string Site => (configuration["Frontend:Url"] ?? "http://localhost:3000").TrimEnd('/');
+    public string Site => AdressesSites.Site(configuration);
 
     public string LienPaiement(string jeton) => $"{Site}/payer/{jeton}";
 

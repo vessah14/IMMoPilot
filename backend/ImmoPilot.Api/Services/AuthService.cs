@@ -158,9 +158,7 @@ public class AuthService(
         await db.SaveChangesAsync();
 
         var p = await parametres.ObtenirAsync();
-        var site = (role == RoleUtilisateur.SuperAdmin
-            ? configuration["SuperAdmin:FrontendUrl"] ?? "http://localhost:3001"
-            : configuration["Frontend:Url"] ?? "http://localhost:3000").TrimEnd('/');
+        var site = role == RoleUtilisateur.SuperAdmin ? AdressesSites.SuperAdmin(configuration) : AdressesSites.Site(configuration);
         await emails.EnvoyerAsync(new EmailAEnvoyer(u.Email, $"{p.NomPlateforme} : réinitialisation de votre mot de passe",
             $"""
             Bonjour {u.NomComplet},
