@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   UserRound,
   Building2,
@@ -77,11 +77,18 @@ const villes = ["Yaoundé", "Douala", "Bafoussam", "Garoua", "Bamenda", "Kribi",
 const styleCarte =
   "flex cursor-pointer gap-3 rounded-xl border border-gray-200 p-4 transition hover:border-blue-300 has-checked:border-blue-600 has-checked:bg-blue-50/60 has-checked:ring-1 has-checked:ring-blue-600 has-focus-visible:ring-4 has-focus-visible:ring-blue-100 has-disabled:cursor-not-allowed has-disabled:opacity-50";
 
+const pasDAbonnement = () => () => {}; // l'adresse ne change pas pendant l'inscription
+
 export default function FormulaireInscription({ offre: offreApi }: { offre: Offre | null }) {
   const router = useRouter();
   const offre = offreApi ?? offreParDefaut;
-  // ?formule=Pro : formule choisie dans la section Tarifs de l'accueil, présélectionnée à l'étape 3
-  const formuleDemandee = useSearchParams().get("formule");
+  // ?formule=Pro : formule choisie dans la section Tarifs de l'accueil, proposée à l'étape 3.
+  // Lue dans le navigateur (pas useSearchParams) : le formulaire reste dans le HTML de la page générée à l'avance
+  const formuleDemandee = useSyncExternalStore(
+    pasDAbonnement,
+    () => new URLSearchParams(window.location.search).get("formule"),
+    () => null,
+  );
   const formuleInitiale = offre.formules.find((f) => f.formule === formuleDemandee)?.formule;
   const formules = construireFormules(offre);
   const formulaire = useRef<HTMLFormElement>(null);
@@ -90,7 +97,7 @@ export default function FormulaireInscription({ offre: offreApi }: { offre: Offr
   const [etape, setEtape] = useState(0);
   const [profil, setProfil] = useState("");
   const [tranche, setTranche] = useState("");
-  const [formule, setFormule] = useState<string>(formuleInitiale ?? "");
+  const [formule, setFormule] = useState(""); // présélectionnée en arrivant à l'étape 3 (formule conseillée)
   const [termine, setTermine] = useState(false);
 
   const derniereEtape = etape === etapes.length - 1;

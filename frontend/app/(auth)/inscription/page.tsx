@@ -4,7 +4,6 @@ import { ArrowLeft } from "lucide-react";
 import FormulaireInscription from "@/components/auth/FormulaireInscription";
 import { apiPublic } from "@/lib/api-serveur";
 import type { Offre } from "@/lib/types";
-import { Suspense } from "react";
 import ImageFond from "@/components/ui/ImageFond";
 
 // Page générée à l'avance (prix remis à jour toutes les 5 minutes) : elle s'ouvre tout de suite, même si l'API est en veille
@@ -28,9 +27,7 @@ export default async function Inscription() {
         </div>
 
         <div className="flex-1 flex items-center justify-center py-10">
-          <Suspense>
-            <FormulaireInscription offre={offre} />
-          </Suspense>
+          <FormulaireInscription offre={offre} />
         </div>
       </div>
 
