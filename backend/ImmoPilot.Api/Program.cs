@@ -241,5 +241,16 @@ app.Use(async (contexte, suite) =>
 
 app.MapControllers();
 
+// État de l'envoi des e-mails au démarrage (sans aucun secret), pour diagnostiquer facilement chez l'hébergeur
+{
+    var c = app.Configuration;
+    var expediteur = c["Email:Expediteur"] ?? c["Email:Utilisateur"] ?? "";
+    var etatEmails = app.Services.GetRequiredService<IEnvoiEmail>().EstConfigure
+        ? $"SMTP {c["Email:Hote"]}:{c["Email:Port"] ?? "587"}, identifiant {(string.IsNullOrWhiteSpace(c["Email:Utilisateur"]) ? "ABSENT" : "présent")}, " +
+          $"clé {(string.IsNullOrWhiteSpace(c["Email:MotDePasse"]) ? "ABSENTE" : "présente")}, expéditeur …@{expediteur.Split('@').LastOrDefault()}"
+        : "NON configurés (variable Email__Hote ou Email__Expediteur absente) : aucun e-mail ne partira";
+    app.Logger.LogWarning("E-mails : {Etat}", etatEmails);
+}
+
 await InitialisationBase.ExecuterAsync(app);
 app.Run();
