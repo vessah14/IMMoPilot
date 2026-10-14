@@ -36,12 +36,35 @@ public static class InitialisationBase
         var email = app.Configuration["SuperAdmin:Email"];
         var motDePasse = app.Configuration["SuperAdmin:MotDePasse"];
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(motDePasse)) return;
-        if (await db.Utilisateurs.AnyAsync(u => u.Role == RoleUtilisateur.SuperAdmin)) return;
 
-        // En ligne, on refuse de créer le super administrateur avec un mot de passe faible
+        // En ligne, on refuse un mot de passe faible pour le super administrateur
         if (!app.Environment.IsDevelopment() && motDePasse.Length < 12)
         {
-            journal.LogError("Super administrateur NON créé : SuperAdmin:MotDePasse doit contenir au moins 12 caractères en production.");
+            journal.LogError("Super administrateur NON créé / NON modifié : SuperAdmin:MotDePasse doit contenir au moins 12 caractères en production.");
+            return;
+        }
+
+        var hacheur = scope.ServiceProvider.GetRequiredService<IPasswordHasher<Utilisateur>>();
+        var existant = await db.Utilisateurs.FirstOrDefaultAsync(u => u.Role == RoleUtilisateur.SuperAdmin);
+        if (existant is not null)
+        {
+            // SuperAdmin:Reinitialiser = true : remplace l'e-mail et le mot de passe du super admin existant par ceux
+            // de la configuration (mot de passe perdu, compte créé avec d'autres valeurs). À retirer ensuite.
+            if (!app.Configuration.GetValue<bool>("SuperAdmin:Reinitialiser")) return;
+
+            var nouvelEmail = AuthService.NormaliserEmail(email);
+            if (await db.Utilisateurs.AnyAsync(u => u.Email == nouvelEmail && u.Id != existant.Id))
+            {
+                journal.LogError("Super administrateur NON modifié : l'e-mail {Email} est déjà utilisé par un autre compte.", nouvelEmail);
+                return;
+            }
+            existant.Email = nouvelEmail;
+            existant.MotDePasseHash = hacheur.HashPassword(existant, motDePasse);
+            existant.Actif = true;
+            existant.MotDePasseModifieLe = DateTime.UtcNow; // ferme les anciennes sessions
+            existant.JetonReinitialisationHash = null;
+            await db.SaveChangesAsync();
+            journal.LogWarning("Super administrateur mis à jour ({Email}). Retirez maintenant la variable SuperAdmin__Reinitialiser.", existant.Email);
             return;
         }
 
@@ -52,8 +75,7 @@ public static class InitialisationBase
             Telephone = "",
             Role = RoleUtilisateur.SuperAdmin,
         };
-        admin.MotDePasseHash = scope.ServiceProvider.GetRequiredService<IPasswordHasher<Utilisateur>>()
-            .HashPassword(admin, motDePasse);
+        admin.MotDePasseHash = hacheur.HashPassword(admin, motDePasse);
         db.Utilisateurs.Add(admin);
         await db.SaveChangesAsync();
         journal.LogInformation("Compte super administrateur créé : {Email}", admin.Email);

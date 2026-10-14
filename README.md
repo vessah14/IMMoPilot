@@ -107,6 +107,8 @@ Quatre conteneurs : `db` (PostgreSQL 17), `api` (`backend/Dockerfile`), `fronten
 | `ForwardedHeaders__FaireConfianceAuxProxys` | `true` (HTTPS et IP des visiteurs derrière le proxy de l'hébergeur) |
 | `Demo__Actif` | `true` (paiements simulés, aucun argent réel) |
 | `SuperAdmin__Email`, `SuperAdmin__MotDePasse` | compte super admin (mot de passe de 12 caractères minimum) |
+| `SuperAdmin__Reinitialiser` | `true` le temps d'un redémarrage pour remplacer l'e-mail et le mot de passe du super admin existant (puis retirer) |
+| `SuperAdmin__FrontendUrl` | adresse du super admin (lien « mot de passe oublié ») |
 | `Email__Hote`, `Email__Port`, `Email__Utilisateur`, `Email__MotDePasse`, `Email__Expediteur` | SMTP Brevo |
 | `Cloudinary__CloudName`, `Cloudinary__ApiKey`, `Cloudinary__ApiSecret` | photos des immeubles |
 
