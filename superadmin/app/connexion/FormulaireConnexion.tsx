@@ -47,7 +47,7 @@ export default function FormulaireConnexion() {
       <Input id="email" label="Adresse e-mail" type="email" autoComplete="username" required />
       <Input id="motDePasse" label="Mot de passe" type="password" autoComplete="current-password" required />
       <Link href="/mot-de-passe-oublie" className="-mt-3 self-end text-sm font-medium text-blue-600 hover:underline">
-        Mot de passe oubliÃ© ?
+        Mot de passe oublié ?
       </Link>
       <Button type="submit" icon={LogIn} fullWidth disabled={envoi} className="mt-2 py-3">
         {envoi ? "Connexion…" : "Se connecter"}
