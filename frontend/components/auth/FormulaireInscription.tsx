@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   UserRound,
   Building2,
@@ -22,7 +22,7 @@ import Button from "@/components/ui/Button";
 import IndicateurEtapes from "@/components/ui/IndicateurEtapes";
 import { apiClient, ErreurApi } from "@/lib/api-client";
 import { fcfa } from "@/lib/format";
-import type { Formule, Offre, ProfilGestion } from "@/lib/types";
+import type { Offre, ProfilGestion } from "@/lib/types";
 
 const etapes = [
   { titre: "Votre compte", icon: UserRound },
@@ -77,15 +77,12 @@ const villes = ["Yaoundé", "Douala", "Bafoussam", "Garoua", "Bamenda", "Kribi",
 const styleCarte =
   "flex cursor-pointer gap-3 rounded-xl border border-gray-200 p-4 transition hover:border-blue-300 has-checked:border-blue-600 has-checked:bg-blue-50/60 has-checked:ring-1 has-checked:ring-blue-600 has-focus-visible:ring-4 has-focus-visible:ring-blue-100 has-disabled:cursor-not-allowed has-disabled:opacity-50";
 
-export default function FormulaireInscription({
-  offre: offreApi,
-  formuleInitiale,
-}: {
-  offre: Offre | null;
-  formuleInitiale?: Formule; // formule choisie dans la section Tarifs de l'accueil
-}) {
+export default function FormulaireInscription({ offre: offreApi }: { offre: Offre | null }) {
   const router = useRouter();
   const offre = offreApi ?? offreParDefaut;
+  // ?formule=Pro : formule choisie dans la section Tarifs de l'accueil, présélectionnée à l'étape 3
+  const formuleDemandee = useSearchParams().get("formule");
+  const formuleInitiale = offre.formules.find((f) => f.formule === formuleDemandee)?.formule;
   const formules = construireFormules(offre);
   const formulaire = useRef<HTMLFormElement>(null);
   const [erreur, setErreur] = useState("");

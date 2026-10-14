@@ -3,14 +3,13 @@ import Logo from "@/components/ui/Logo";
 import { ArrowLeft } from "lucide-react";
 import FormulaireInscription from "@/components/auth/FormulaireInscription";
 import { apiPublic } from "@/lib/api-serveur";
-import type { Formule, Offre } from "@/lib/types";
+import type { Offre } from "@/lib/types";
+import { Suspense } from "react";
 import ImageFond from "@/components/ui/ImageFond";
 
-// ?formule=Pro : formule choisie depuis la section Tarifs, présélectionnée à l'étape 3
-export default async function Inscription({ searchParams }: { searchParams: Promise<{ formule?: string }> }) {
-  const { formule } = await searchParams;
-  const offre = await apiPublic<Offre>("/offre", 300); // prix et limites des formules (mis en cache 5 minutes)
-  const formuleInitiale = offre?.formules.find((f) => f.formule === formule)?.formule as Formule | undefined;
+// Page générée à l'avance (prix remis à jour toutes les 5 minutes) : elle s'ouvre tout de suite, même si l'API est en veille
+export default async function Inscription() {
+  const offre = await apiPublic<Offre>("/offre", 300); // prix et limites des formules
   return (
     <section className="min-h-screen flex bg-gray-50">
       {/* Colonne gauche : formulaire */}
@@ -29,7 +28,9 @@ export default async function Inscription({ searchParams }: { searchParams: Prom
         </div>
 
         <div className="flex-1 flex items-center justify-center py-10">
-          <FormulaireInscription offre={offre} formuleInitiale={formuleInitiale} />
+          <Suspense>
+            <FormulaireInscription offre={offre} />
+          </Suspense>
         </div>
       </div>
 

@@ -5,6 +5,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>511556ed-de61-4716-ac44-fa489f47a7a2</UserSecretsId>
+    <!-- Code précompilé à la publication : l'API démarre et répond plus vite au réveil (hébergeurs gratuits peu puissants) -->
+    <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
 
   <ItemGroup>

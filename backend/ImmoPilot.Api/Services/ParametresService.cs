@@ -16,14 +16,14 @@ public class ParametresService(ImmoPilotDbContext db, IMemoryCache cache) : IPar
         (await cache.GetOrCreateAsync(CleCache, async entree =>
         {
             entree.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30);
-            return await db.Parametres.AsNoTracking().FirstOrDefaultAsync() ?? new ParametresPlateforme();
+            return await db.Parametres.AsNoTracking().OrderBy(x => x.Id).FirstOrDefaultAsync() ?? new ParametresPlateforme();
         }))!;
 
     public async Task<ParametresPlateformeDto> ObtenirDtoAsync() => VersDto(await ObtenirAsync());
 
     public async Task<ParametresPlateformeDto> ModifierAsync(ParametresPlateformeDto r)
     {
-        var p = await db.Parametres.FirstOrDefaultAsync();
+        var p = await db.Parametres.OrderBy(x => x.Id).FirstOrDefaultAsync();
         if (p is null)
         {
             p = new ParametresPlateforme();

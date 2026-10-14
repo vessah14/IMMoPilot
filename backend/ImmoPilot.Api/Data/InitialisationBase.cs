@@ -19,7 +19,7 @@ public static class InitialisationBase
         if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Base:MigrerAuDemarrage"))
             await db.Database.MigrateAsync();
 
-        var parametres = await db.Parametres.FirstOrDefaultAsync();
+        var parametres = await db.Parametres.OrderBy(x => x.Id).FirstOrDefaultAsync();
         if (parametres is null)
         {
             parametres = new ParametresPlateforme();

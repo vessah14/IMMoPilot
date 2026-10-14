@@ -8,6 +8,7 @@ using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace ImmoPilot.Api.Services;
 
@@ -21,7 +22,8 @@ public class AuthService(
     IFileEmails fileEmails,
     ModelesEmail modeles,
     IConfiguration configuration,
-    TimeProvider horloge) : IAuthService
+    TimeProvider horloge,
+    IMemoryCache cache) : IAuthService
 {
     public async Task<Utilisateur> InscrireAsync(InscriptionDto r)
     {
@@ -143,6 +145,7 @@ public class AuthService(
         u.MotDePasseHash = hacheur.HashPassword(u, r.NouveauMotDePasse);
         u.MotDePasseModifieLe = horloge.GetUtcNow().UtcDateTime; // déconnecte les autres appareils
         await db.SaveChangesAsync();
+        cache.Remove(EtatCompte.Cle(u.Id));
     }
 
     public async Task DemanderReinitialisationAsync(MotDePasseOublieDto r, RoleUtilisateur role)
@@ -191,6 +194,7 @@ public class AuthService(
         notifications.Ajouter(u.Id, TypeNotification.Systeme, "Mot de passe modifié",
             "Votre mot de passe a été réinitialisé. Si ce n'est pas vous, contactez le support immédiatement.");
         await db.SaveChangesAsync();
+        cache.Remove(EtatCompte.Cle(u.Id));
         return u;
     }
 

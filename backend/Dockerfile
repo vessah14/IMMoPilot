@@ -6,9 +6,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY ImmoPilot.Api/ImmoPilot.Api.csproj ImmoPilot.Api/
-RUN dotnet restore ImmoPilot.Api/ImmoPilot.Api.csproj
+RUN dotnet restore ImmoPilot.Api/ImmoPilot.Api.csproj -r linux-x64
 COPY ImmoPilot.Api/ ImmoPilot.Api/
-RUN dotnet publish ImmoPilot.Api/ImmoPilot.Api.csproj -c Release -o /app --no-restore
+RUN dotnet publish ImmoPilot.Api/ImmoPilot.Api.csproj -c Release -r linux-x64 --self-contained false -o /app --no-restore
 
 # ---- Étape 2 : exécution (image légère, utilisateur non administrateur) ----
 FROM mcr.microsoft.com/dotnet/aspnet:10.0

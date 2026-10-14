@@ -4,6 +4,7 @@ using ImmoPilot.Api.Exceptions;
 using ImmoPilot.Api.Interfaces;
 using ImmoPilot.Api.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace ImmoPilot.Api.Services;
 
@@ -12,7 +13,8 @@ public class AdminService(
     ImmoPilotDbContext db,
     IUtilisateurCourant moi,
     IParametresService parametres,
-    TimeProvider horloge) : IAdminService
+    TimeProvider horloge,
+    IMemoryCache cache) : IAdminService
 {
     public async Task<StatistiquesPlateformeDto> StatistiquesAsync()
     {
@@ -135,6 +137,7 @@ public class AdminService(
 
         utilisateur.Actif = actif;
         await db.SaveChangesAsync();
+        cache.Remove(EtatCompte.Cle(utilisateurId));
         return true;
     }
 }

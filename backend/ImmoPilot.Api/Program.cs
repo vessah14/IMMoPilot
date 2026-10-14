@@ -10,6 +10,7 @@ using ImmoPilot.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -96,13 +97,17 @@ builder.Services
                 }
                 return Task.CompletedTask;
             },
-            // Un compte suspendu est refusé immédiatement, même avec un jeton encore valide
+            // Un compte suspendu est refusé immédiatement, même avec un jeton encore valide (état gardé 30 s en mémoire, effacé à chaque changement)
             OnTokenValidated = async contexte =>
             {
                 var id = int.TryParse(contexte.Principal?.FindFirst(JetonService.ClaimId)?.Value, out var valeur) ? valeur : 0;
-                var db = contexte.HttpContext.RequestServices.GetRequiredService<ImmoPilotDbContext>();
-                var compte = await db.Utilisateurs.Where(u => u.Id == id)
-                    .Select(u => new { u.Actif, u.MotDePasseModifieLe }).FirstOrDefaultAsync();
+                var services = contexte.HttpContext.RequestServices;
+                var compte = await services.GetRequiredService<IMemoryCache>().GetOrCreateAsync(EtatCompte.Cle(id), async entree =>
+                {
+                    entree.AbsoluteExpirationRelativeToNow = EtatCompte.DureeCache;
+                    return await services.GetRequiredService<ImmoPilotDbContext>().Utilisateurs.Where(u => u.Id == id)
+                        .Select(u => new EtatCompte(u.Actif, u.MotDePasseModifieLe)).FirstOrDefaultAsync();
+                });
                 if (compte is null || !compte.Actif)
                     contexte.Fail("Compte suspendu ou supprimé.");
                 // Session ouverte avant un changement de mot de passe → refusée
