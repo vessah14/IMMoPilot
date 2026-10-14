@@ -53,6 +53,7 @@ if (modeDemo || (builder.Environment.IsDevelopment() && builder.Configuration.Ge
 else
     builder.Services.AddHttpClient<ICampayService, CampayService>(c => c.Timeout = TimeSpan.FromSeconds(30));
 builder.Services.AddScoped<IAbonnementService, AbonnementService>();
+builder.Services.AddHttpClient("brevo");
 builder.Services.AddSingleton<IEnvoiEmail, EmailService>();
 // E-mails automatiques (bienvenue, lien locataire, reçus, abonnement) : envoyés en arrière-plan
 builder.Services.AddSingleton<ModelesEmail>();
@@ -245,10 +246,13 @@ app.MapControllers();
 {
     var c = app.Configuration;
     var expediteur = c["Email:Expediteur"] ?? c["Email:Utilisateur"] ?? "";
-    var etatEmails = app.Services.GetRequiredService<IEnvoiEmail>().EstConfigure
-        ? $"SMTP {c["Email:Hote"]}:{c["Email:Port"] ?? "587"}, identifiant {(string.IsNullOrWhiteSpace(c["Email:Utilisateur"]) ? "ABSENT" : "présent")}, " +
-          $"clé {(string.IsNullOrWhiteSpace(c["Email:MotDePasse"]) ? "ABSENTE" : "présente")}, expéditeur …@{expediteur.Split('@').LastOrDefault()}"
-        : "NON configurés (variable Email__Hote ou Email__Expediteur absente) : aucun e-mail ne partira";
+    var envoi = app.Services.GetRequiredService<IEnvoiEmail>();
+    var etatEmails = !envoi.EstConfigure
+        ? "NON configurés (Email__Expediteur absent, ou ni Email__BrevoApiKey ni Email__Hote) : aucun e-mail ne partira"
+        : envoi is EmailService { ParApiBrevo: true }
+        ? $"API Brevo (HTTPS), expéditeur …@{expediteur.Split('@').LastOrDefault()}"
+        : $"SMTP {c["Email:Hote"]}:{c["Email:Port"] ?? "587"}, identifiant {(string.IsNullOrWhiteSpace(c["Email:Utilisateur"]) ? "ABSENT" : "présent")}, " +
+          $"clé {(string.IsNullOrWhiteSpace(c["Email:MotDePasse"]) ? "ABSENTE" : "présente")}, expéditeur …@{expediteur.Split('@').LastOrDefault()}";
     app.Logger.LogWarning("E-mails : {Etat}", etatEmails);
 }
 

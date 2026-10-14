@@ -109,7 +109,8 @@ Quatre conteneurs : `db` (PostgreSQL 17), `api` (`backend/Dockerfile`), `fronten
 | `SuperAdmin__Email`, `SuperAdmin__MotDePasse` | compte super admin (mot de passe de 12 caractères minimum) |
 | `SuperAdmin__Reinitialiser` | `true` le temps d'un redémarrage pour remplacer l'e-mail et le mot de passe du super admin existant (puis retirer) |
 | `SuperAdmin__FrontendUrl` | adresse du super admin (lien « mot de passe oublié ») |
-| `Email__Hote`, `Email__Port`, `Email__Utilisateur`, `Email__MotDePasse`, `Email__Expediteur` | SMTP Brevo |
+| `Email__BrevoApiKey`, `Email__Expediteur`, `Email__NomExpediteur` | e-mails via l'API de Brevo (HTTPS) : **obligatoire sur Render gratuit**, qui bloque les ports SMTP |
+| `Email__Hote`, `Email__Port`, `Email__Utilisateur`, `Email__MotDePasse` | ou bien SMTP (ignoré si `Email__BrevoApiKey` est renseignée) |
 | `Cloudinary__CloudName`, `Cloudinary__ApiKey`, `Cloudinary__ApiSecret` | photos des immeubles |
 
 **Variables des deux projets Next.js (Vercel)** :
