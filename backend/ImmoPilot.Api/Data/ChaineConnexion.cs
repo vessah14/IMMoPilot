@@ -31,6 +31,9 @@ public static class ChaineConnexion
 
             if (string.IsNullOrWhiteSpace(constructeur.Host))
                 throw new ArgumentException("l'hôte (Host) est absent");
+            // Pas d'authentification Kerberos (GSS) chez Neon / Supabase : évite l'erreur « libgssapi_krb5 » au démarrage
+            if (!valeur.Contains("GSS", StringComparison.OrdinalIgnoreCase))
+                constructeur.GssEncryptionMode = GssEncryptionMode.Disable;
             return constructeur.ConnectionString;
         }
         catch (Exception e) when (e is ArgumentException or FormatException or UriFormatException or KeyNotFoundException)
