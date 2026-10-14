@@ -4,11 +4,12 @@ import { ArrowLeft } from "lucide-react";
 import FormulaireInscription from "@/components/auth/FormulaireInscription";
 import { apiPublic } from "@/lib/api-serveur";
 import type { Formule, Offre } from "@/lib/types";
+import ImageFond from "@/components/ui/ImageFond";
 
 // ?formule=Pro : formule choisie depuis la section Tarifs, présélectionnée à l'étape 3
 export default async function Inscription({ searchParams }: { searchParams: Promise<{ formule?: string }> }) {
   const { formule } = await searchParams;
-  const offre = await apiPublic<Offre>("/offre"); // prix et limites des formules
+  const offre = await apiPublic<Offre>("/offre", 300); // prix et limites des formules (mis en cache 5 minutes)
   const formuleInitiale = offre?.formules.find((f) => f.formule === formule)?.formule as Formule | undefined;
   return (
     <section className="min-h-screen flex bg-gray-50">
@@ -33,7 +34,8 @@ export default async function Inscription({ searchParams }: { searchParams: Prom
       </div>
 
       {/* Colonne droite : image (masquée sur mobile) */}
-      <div className="hidden lg:block flex-1 relative bg-[url('/images/Fond.png')] bg-cover bg-center bg-no-repeat">
+      <div className="hidden lg:block flex-1 relative bg-slate-900">
+        <ImageFond sizes="50vw" />
         {/* Dégradé sombre en bas pour rendre le texte lisible */}
         <div className="absolute inset-0 bg-linear-to-t from-blue-950/70 via-transparent to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-12 text-white">

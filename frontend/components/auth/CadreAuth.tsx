@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import Logo from "@/components/ui/Logo";
+import ImageFond from "@/components/ui/ImageFond";
 
 // Mise en page des pages de compte (mot de passe oublié…) : formulaire à gauche, image à droite
 export default function CadreAuth({ children }: { children: React.ReactNode }) {
@@ -23,7 +24,8 @@ export default function CadreAuth({ children }: { children: React.ReactNode }) {
         <div className="flex-1 flex items-center justify-center py-10">{children}</div>
       </div>
 
-      <div className="hidden lg:block flex-1 relative bg-[url('/images/Fond.png')] bg-cover bg-center bg-no-repeat">
+      <div className="hidden lg:block flex-1 relative bg-slate-900">
+        <ImageFond sizes="50vw" />
         <div className="absolute inset-0 bg-linear-to-t from-blue-950/70 via-transparent to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-12 text-white">
           <p className="text-2xl font-semibold max-w-md leading-snug">Votre patrimoine immobilier, piloté en toute sérénité.</p>

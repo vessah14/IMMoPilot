@@ -1,0 +1,18 @@
+# Garde l'API éveillée : l'offre gratuite de Render met le service en veille après 15 min sans visite,
+# et le premier chargement suivant prend alors 30 à 60 s. On l'appelle donc toutes les 10 minutes.
+# À régler une fois : Settings > Secrets and variables > Actions > Variables > API_URL
+# (ex : https://immopilot-api.onrender.com)
+name: Réveil de l'API
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  reveil:
+    runs-on: ubuntu-latest
+    if: ${{ vars.API_URL != '' }}
+    steps:
+      - name: Appel de l'API
+        run: curl --silent --show-error --fail --max-time 90 --retry 2 "${{ vars.API_URL }}/api/offre" -o /dev/null

@@ -14,6 +14,7 @@ import {
   FileText,
   BarChart3,
 } from "lucide-react";
+import ImageFond from "@/components/ui/ImageFond";
 
 export default async function Homepage() {
   // Prix des formules réglés par le super admin (mis en cache 5 minutes)
@@ -33,9 +34,11 @@ export default async function Homepage() {
 
 function Hero() {
   return (
-    <div id="accueil" className="relative min-h-svh md:min-h-0 md:h-240 overflow-hidden">
+    <div id="accueil" className="relative min-h-svh md:min-h-0 md:h-240 overflow-hidden bg-slate-900">
       {/* Image de fond : léger zoom arrière à l'ouverture */}
-      <div className="absolute inset-0 bg-[url('/images/Fond.png')] bg-cover bg-center bg-no-repeat animate-zoom-fond motion-reduce:animate-none"></div>
+      <div className="absolute inset-0 animate-zoom-fond motion-reduce:animate-none">
+        <ImageFond prioritaire />
+      </div>
 
       {/* Overlay sombre */}
       <div className="absolute inset-0 bg-black/60"></div>

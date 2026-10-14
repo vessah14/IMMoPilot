@@ -3,6 +3,7 @@ import Logo from "@/components/ui/Logo";
 import { ArrowLeft } from "lucide-react";
 import { Suspense } from "react";
 import FormulaireConnexion from "@/components/auth/FormulaireConnexion";
+import ImageFond from "@/components/ui/ImageFond";
 
 export default function Connexion() {
   return (
@@ -30,7 +31,8 @@ export default function Connexion() {
       </div>
 
       {/* Colonne droite : image (masquée sur mobile) */}
-      <div className="hidden lg:block flex-1 relative bg-[url('/images/Fond.png')] bg-cover bg-center bg-no-repeat">
+      <div className="hidden lg:block flex-1 relative bg-slate-900">
+        <ImageFond sizes="50vw" />
         {/* Dégradé sombre en bas pour rendre le texte lisible */}
         <div className="absolute inset-0 bg-linear-to-t from-blue-950/70 via-transparent to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-12 text-white">
