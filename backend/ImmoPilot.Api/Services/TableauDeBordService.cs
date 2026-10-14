@@ -13,12 +13,20 @@ public class TableauDeBordService(ImmoPilotDbContext db, IUtilisateurCourant moi
         var aujourdhui = Dates.Aujourdhui(horloge);
         var moisCourant = Dates.PremierDuMois(aujourdhui);
         var debut12Mois = moisCourant.AddMonths(-11);
-        var jourEcheance = await db.Utilisateurs.Where(u => u.Id == moi.Id).Select(u => u.JourEcheance).FirstAsync();
+        var id = moi.Id;
 
-        var immeubles = await db.Immeubles.CountAsync(i => i.ProprietaireId == moi.Id);
-        var logements = db.Logements.Where(l => l.Immeuble.ProprietaireId == moi.Id);
-        var nbLogements = await logements.CountAsync();
-        var occupes = await logements.CountAsync(l => l.Statut == StatutLogement.Occupe);
+        // Jour d'échéance et compteurs en une seule requête (moins d'allers-retours avec la base)
+        var compteurs = await db.Utilisateurs.Where(u => u.Id == id)
+            .Select(u => new
+            {
+                u.JourEcheance,
+                Immeubles = db.Immeubles.Count(i => i.ProprietaireId == id),
+                Logements = db.Logements.Count(l => l.Immeuble.ProprietaireId == id),
+                Occupes = db.Logements.Count(l => l.Immeuble.ProprietaireId == id && l.Statut == StatutLogement.Occupe),
+            })
+            .FirstAsync();
+        var (jourEcheance, immeubles, nbLogements, occupes) =
+            (compteurs.JourEcheance, compteurs.Immeubles, compteurs.Logements, compteurs.Occupes);
 
         // Revenus encaissés par mois (paiements confirmés, rangés par date de paiement)
         var parMois = await db.Paiements.AsNoTracking()

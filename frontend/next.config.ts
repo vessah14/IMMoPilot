@@ -17,6 +17,9 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${API_URL}/api/:path*` }];
   },
+  // Pages déjà visitées gardées 30 s dans le navigateur : revenir sur une page est instantané
+  // (après une modification, router.refresh() recharge quand même les données)
+  experimental: { staleTimes: { dynamic: 30 } },
   // Racine du projet (évite l'avertissement dû à un package-lock.json dans le dossier utilisateur)
   turbopack: { root: path.resolve(__dirname) },
 };
