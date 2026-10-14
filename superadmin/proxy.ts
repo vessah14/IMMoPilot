@@ -19,6 +19,7 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Toutes les pages, sauf la déconnexion, les fichiers internes de Next.js et les icônes
-  matcher: ["/((?!deconnexion|_next/static|_next/image|favicon.ico|icon.svg|apple-icon.png|logo-icone.svg).*)"],
+  // Toutes les pages, sauf : la déconnexion, les appels /api (transmis à l'API, qui vérifie elle-même la session),
+  // robots.txt, les fichiers internes de Next.js et les icônes
+  matcher: ["/((?!api/|deconnexion|robots.txt|_next/static|_next/image|favicon.ico|icon.svg|apple-icon.png|logo-icone.svg).*)"],
 };
