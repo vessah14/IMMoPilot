@@ -20,28 +20,40 @@ const liens = [
 export default function Navbarre() {
   const [menuOuvert, setMenuOuvert] = useState(false);
   const [sectionSurvolee, setSectionActive] = useState("accueil");
+  // Boutons « Se connecter / Commencer » affichés tout de suite ; remplacés par « Mon compte » si une session existe
+  const [connecte, setConnecte] = useState(false);
   const [utilisateur, setUtilisateur] = useState<Utilisateur | null>(null);
-  const [sessionVerifiee, setSessionVerifiee] = useState(false);
   // Hors de la page d'accueil (pages légales…), aucun lien n'est allumé
   const sectionActive = usePathname() === "/" ? sectionSurvolee : "";
   const fermerMenu = () => setMenuOuvert(false);
 
   useEffect(() => {
     let actif = true;
-    apiClient<Utilisateur>("/auth/moi")
-      .then((moi) => {
-        if (actif) setUtilisateur(moi);
+    // 1. Présence du cookie : réponse immédiate du site, sans attendre l'API (qui peut être en veille)
+    fetch("/session")
+      .then((r) => r.json() as Promise<{ connecte: boolean }>)
+      .then(({ connecte }) => {
+        if (!actif || !connecte) return;
+        setConnecte(true);
+        // 2. Nom de la personne connectée, demandé à l'API ; session expirée → retour aux boutons
+        return apiClient<Utilisateur>("/auth/moi")
+          .then((moi) => {
+            if (actif) setUtilisateur(moi);
+          })
+          .catch(() => {
+            if (actif) setConnecte(false);
+          });
       })
       .catch(() => {
-        // Un visiteur non connecté n'a pas de profil à afficher.
-      })
-      .finally(() => {
-        if (actif) setSessionVerifiee(true);
+        // Vérification impossible : on garde les boutons de connexion
       });
     return () => {
       actif = false;
     };
   }, []);
+
+  const nom = utilisateur?.nomComplet.trim() ?? "";
+  const initiale = nom.charAt(0).toUpperCase() || "?";
 
   // Surveille quelle section est au milieu de l'écran pour allumer le bon lien
   useEffect(() => {
@@ -91,21 +103,21 @@ export default function Navbarre() {
 
           {/* Boutons — ordinateur */}
           <div className="hidden md:flex gap-3">
-            {utilisateur ? (
+            {connecte ? (
               <Link
                 href="/admin"
-                aria-label={`Ouvrir le tableau de bord de ${utilisateur.nomComplet}`}
+                aria-label={nom ? `Ouvrir le tableau de bord de ${nom}` : "Ouvrir le tableau de bord"}
                 className="inline-flex max-w-64 items-center gap-3 rounded-xl px-2 py-1.5 text-left transition hover:bg-gray-100"
               >
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
-                  {utilisateur.nomComplet.trim().charAt(0).toUpperCase() || "?"}
+                  {initiale}
                 </span>
                 <span className="flex min-w-0 flex-col leading-tight">
-                  <span className="max-w-44 truncate text-sm font-medium text-gray-900">{utilisateur.nomComplet}</span>
+                  <span className="max-w-44 truncate text-sm font-medium text-gray-900">{nom || "Mon espace"}</span>
                   <span className="text-xs text-gray-500">Mon compte</span>
                 </span>
               </Link>
-            ) : sessionVerifiee ? (
+            ) : (
               <>
                 <Link
                   href="/connexion"
@@ -120,7 +132,7 @@ export default function Navbarre() {
                   Commencer
                 </Link>
               </>
-            ) : null}
+            )}
           </div>
 
           {/* Bouton burger — mobile */}
@@ -157,21 +169,21 @@ export default function Navbarre() {
               ))}
             </ul>
             <div className="flex flex-col gap-3 pt-2">
-              {utilisateur ? (
+              {connecte ? (
                 <Link
                   href="/admin"
                   onClick={fermerMenu}
                   className="inline-flex items-center gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-gray-100"
                 >
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
-                    {utilisateur.nomComplet.trim().charAt(0).toUpperCase() || "?"}
+                    {initiale}
                   </span>
                   <span className="flex min-w-0 flex-col leading-tight">
-                    <span className="truncate text-sm font-medium text-gray-900">{utilisateur.nomComplet}</span>
+                    <span className="truncate text-sm font-medium text-gray-900">{nom || "Mon espace"}</span>
                     <span className="text-xs text-gray-500">Mon compte</span>
                   </span>
                 </Link>
-              ) : sessionVerifiee ? (
+              ) : (
                 <>
                   <Link
                     href="/connexion"
@@ -188,7 +200,7 @@ export default function Navbarre() {
                     Commencer
                   </Link>
                 </>
-              ) : null}
+              )}
             </div>
           </div>
         )}
