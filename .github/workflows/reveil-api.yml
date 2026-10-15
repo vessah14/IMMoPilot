@@ -1,7 +1,7 @@
 # Garde l'API éveillée : l'offre gratuite de Render met le service en veille après 15 min sans visite,
 # et le premier chargement suivant prend alors 30 à 60 s. On l'appelle donc toutes les 10 minutes.
 # À régler une fois : Settings > Secrets and variables > Actions > Variables > API_URL
-# (ex : https://immopilot-api.onrender.com)
+# (adresse de l'API sur Render, ex : https://immopilot-api-xxxx.onrender.com)
 name: Réveil de l'API
 
 on:
@@ -13,6 +13,18 @@ jobs:
   reveil:
     runs-on: ubuntu-latest
     if: ${{ vars.API_URL != '' }}
+    env:
+      API_URL: ${{ vars.API_URL }}
     steps:
       - name: Appel de l'API
-        run: curl --silent --show-error --fail --max-time 90 --retry 2 "${{ vars.API_URL }}/api/offre" -o /dev/null
+        run: |
+          # Adresse nettoyée : espaces, retours à la ligne, guillemets et « / » final retirés, https:// ajouté si absent
+          adresse=$(printf '%s' "$API_URL" | tr -d '[:space:]"'"'" | sed 's:/*$::')
+          case "$adresse" in http://*|https://*) ;; *) adresse="https://$adresse" ;; esac
+          echo "Appel de $adresse/api/offre"
+          code=$(curl --silent --show-error --max-time 90 --retry 2 -o /dev/null -w '%{http_code}' "$adresse/api/offre")
+          echo "Réponse : HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::error::L'API a répondu HTTP $code. Vérifiez que API_URL est l'adresse de l'API IMMO PILOT sur Render."
+            exit 1
+          fi
