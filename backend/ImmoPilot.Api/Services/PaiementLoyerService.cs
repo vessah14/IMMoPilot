@@ -206,6 +206,13 @@ public class PaiementLoyerService(
     private async Task ActualiserAsync(Paiement p, Locataire l)
     {
         var statut = await paiements.StatutAsync(p.Reference!);
+        // Vérification obligatoire : SasPay doit avoir encaissé exactement le loyer dû, en XAF ;
+        // sinon ni confirmation ni reversement (l'argent éventuel reste sur le wallet, à vérifier à la main)
+        if (statut.Etat == EtatPaiementMobile.Reussi && statut.Anomalie(p.Montant) is { } anomalie)
+        {
+            journal.LogError("Loyer {Id} NON confirmé ({Anomalie}) : à vérifier dans le tableau de bord SasPay", p.Id, anomalie);
+            statut = statut with { Etat = EtatPaiementMobile.Echoue };
+        }
         var nouveau = statut.Etat switch
         {
             EtatPaiementMobile.Reussi => StatutPaiement.Confirme,

@@ -15,9 +15,20 @@ public class ImmoPilotDbContext(DbContextOptions<ImmoPilotDbContext> options) : 
     public DbSet<Ticket> Tickets => Set<Ticket>();
     public DbSet<ParametresPlateforme> Parametres => Set<ParametresPlateforme>();
     public DbSet<PaiementAbonnement> PaiementsAbonnement => Set<PaiementAbonnement>();
+    public DbSet<RequeteIdempotente> RequetesIdempotentes => Set<RequeteIdempotente>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Clés Idempotency-Key déjà reçues (voir IdempotentAttribute) : une seule opération par clé et par compte
+        modelBuilder.Entity<RequeteIdempotente>(e =>
+        {
+            e.Property(r => r.Portee).HasMaxLength(100);
+            e.Property(r => r.Cle).HasMaxLength(100);
+            e.Property(r => r.Empreinte).HasMaxLength(64);
+            e.HasIndex(r => new { r.Portee, r.Cle }).IsUnique();
+            e.HasIndex(r => r.DateCreation);
+        });
+
         modelBuilder.Entity<Immeuble>(e =>
         {
             e.Property(i => i.Nom).HasMaxLength(150);
@@ -59,12 +70,12 @@ public class ImmoPilotDbContext(DbContextOptions<ImmoPilotDbContext> options) : 
         modelBuilder.Entity<Immeuble>(e =>
         {
             e.Property(i => i.BeneficiaireNom).HasMaxLength(150);
-            e.Property(i => i.BeneficiaireCompte).HasMaxLength(20);
+            e.Property(i => i.BeneficiaireCompte).HasMaxLength(200).HasConversion(ChiffrementChamps.Convertisseur); // numéro Mobile Money chiffré (AES-256-GCM, voir ChiffrementChamps)
         });
         modelBuilder.Entity<Logement>(e =>
         {
             e.Property(l => l.BeneficiaireNom).HasMaxLength(150);
-            e.Property(l => l.BeneficiaireCompte).HasMaxLength(20);
+            e.Property(l => l.BeneficiaireCompte).HasMaxLength(200).HasConversion(ChiffrementChamps.Convertisseur); // numéro Mobile Money chiffré (AES-256-GCM, voir ChiffrementChamps)
         });
 
         modelBuilder.Entity<Locataire>(e =>
@@ -95,6 +106,7 @@ public class ImmoPilotDbContext(DbContextOptions<ImmoPilotDbContext> options) : 
             e.Property(p => p.Statut).HasConversion<string>().HasMaxLength(20);
             e.Property(p => p.Reference).HasMaxLength(100);
             e.HasIndex(p => p.Periode);
+            e.Property(p => p.CompteVersement).HasMaxLength(200).HasConversion(ChiffrementChamps.Convertisseur); // numéro Mobile Money chiffré (AES-256-GCM, voir ChiffrementChamps)
             e.HasIndex(p => p.Reference); // webhook SasPay : retrouver le loyer par l'identifiant du paiement
             e.Property(p => p.StatutReversement).HasConversion<string>().HasMaxLength(20);
             e.HasIndex(p => p.StatutReversement);
@@ -117,7 +129,7 @@ public class ImmoPilotDbContext(DbContextOptions<ImmoPilotDbContext> options) : 
             e.Property(u => u.NomComplet).HasMaxLength(150);
             e.Property(u => u.Email).HasMaxLength(200);
             e.HasIndex(u => u.Email).IsUnique();
-            e.Property(u => u.CompteEncaissement).HasMaxLength(20);
+            e.Property(u => u.CompteEncaissement).HasMaxLength(200).HasConversion(ChiffrementChamps.Convertisseur); // numéro Mobile Money chiffré (AES-256-GCM, voir ChiffrementChamps)
             e.Property(u => u.Telephone).HasMaxLength(30);
             e.Property(u => u.MotDePasseHash).HasMaxLength(500);
             e.Property(u => u.Role).HasConversion<string>().HasMaxLength(20);

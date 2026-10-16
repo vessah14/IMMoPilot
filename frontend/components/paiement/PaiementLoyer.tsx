@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CircleAlert, CircleCheck, CircleX, Clock, ExternalLink, Home, Loader2, PartyPopper, Smartphone, Phone } from "lucide-react";
 import Input from "@/components/ui/Input";
 import { apiClient, ErreurApi } from "@/lib/api-client";
+import { useCleIdempotence } from "@/lib/idempotence";
 import { fcfa, dateCourte, nomMois } from "@/lib/format";
 import type { PageLoyer, PaiementLoyer as Paiement, StatutEcheance } from "@/lib/types";
 
@@ -38,6 +39,7 @@ export default function PaiementLoyer({
   const [enCours, setEnCours] = useState<Paiement | null>(null); // en attente de validation sur le téléphone
   const [resultat, setResultat] = useState<Paiement | null>(null);
   const [redirection, setRedirection] = useState(false); // départ vers la page de paiement SasPay
+  const idempotence = useCleIdempotence(); // un double envoi ne crée qu'une seule demande de paiement
 
   // Mois sélectionné ; s'il vient d'être payé (il disparaît de la liste), on passe au suivant
   const choisi = page.moisDus.find((m) => m.mois === mois) ?? page.moisDus[0];
@@ -90,7 +92,12 @@ export default function PaiementLoyer({
     setResultat(null);
     setEnvoi(true);
     try {
-      const p = await apiClient<Paiement>(`${base}/paiements`, { methode: "POST", corps: { mois: choisi?.mois, telephone } });
+      const p = await apiClient<Paiement>(`${base}/paiements`, {
+        methode: "POST",
+        cleIdempotence: idempotence.cle(),
+        corps: { mois: choisi?.mois, telephone },
+      });
+      idempotence.renouveler(); // demande créée : un prochain paiement sera une nouvelle opération
       // Orange Money (et parfois MTN) : le paiement se fait sur la page SasPay, puis retour automatique ici
       if (p.urlPaiement) {
         setRedirection(true);

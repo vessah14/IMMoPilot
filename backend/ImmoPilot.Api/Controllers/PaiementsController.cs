@@ -22,6 +22,7 @@ public class PaiementsController(IPaiementService service) : ControllerBase
         await service.ObtenirAsync(id) is { } paiement ? Ok(paiement) : NotFound();
 
     [HttpPost]
+    [Idempotent]
     public async Task<ActionResult<PaiementDto>> Creer(PaiementRequeteDto requete)
     {
         var paiement = await service.CreerAsync(requete);

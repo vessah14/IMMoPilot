@@ -39,8 +39,8 @@ namespace ImmoPilot.Api.Data.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("BeneficiaireCompte")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("BeneficiaireNom")
                         .HasMaxLength(150)
@@ -164,8 +164,8 @@ namespace ImmoPilot.Api.Data.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("BeneficiaireCompte")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("BeneficiaireNom")
                         .HasMaxLength(150)
@@ -264,7 +264,8 @@ namespace ImmoPilot.Api.Data.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<string>("CompteVersement")
-                        .HasColumnType("text");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<DateTime?>("DateDemande")
                         .HasColumnType("timestamp with time zone");
@@ -503,6 +504,51 @@ namespace ImmoPilot.Api.Data.Migrations
                     b.ToTable("Relances");
                 });
 
+            modelBuilder.Entity("ImmoPilot.Api.Models.RequeteIdempotente", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Cle")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("DateCreation")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Empreinte")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Portee")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Reponse")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("StatutHttp")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Terminee")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DateCreation");
+
+                    b.HasIndex("Portee", "Cle")
+                        .IsUnique();
+
+                    b.ToTable("RequetesIdempotentes");
+                });
+
             modelBuilder.Entity("ImmoPilot.Api.Models.Ticket", b =>
                 {
                     b.Property<int>("Id")
@@ -567,8 +613,8 @@ namespace ImmoPilot.Api.Data.Migrations
                         .HasColumnType("character varying(250)");
 
                     b.Property<string>("CompteEncaissement")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<DateTime>("DateInscription")
                         .ValueGeneratedOnAdd()

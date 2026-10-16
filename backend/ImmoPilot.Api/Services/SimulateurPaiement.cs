@@ -51,7 +51,8 @@ public class SimulateurPaiement(TimeProvider horloge, ILogger<SimulateurPaiement
 
         return Task.FromResult(new StatutPaiementMobile(etat, Operateurs.De(t.Telephone),
             etat == EtatPaiementMobile.Reussi ? $"SIMU{reference[^8..].ToUpperInvariant()}" : null,
-            etat == EtatPaiementMobile.Reussi ? t.Montant : null)); // pas de frais en simulation
+            etat == EtatPaiementMobile.Reussi ? t.Montant : null, // pas de frais en simulation
+            t.Montant, "XAF"));
     }
 
     // Reversement simulé : toujours accepté puis reçu immédiatement, sans frais
@@ -67,7 +68,7 @@ public class SimulateurPaiement(TimeProvider horloge, ILogger<SimulateurPaiement
 
     public Task<StatutPaiementMobile> StatutReversementAsync(string reference) =>
         Task.FromResult(reversements.TryGetValue(reference, out var montant)
-            ? new StatutPaiementMobile(EtatPaiementMobile.Reussi, null, reference, montant)
+            ? new StatutPaiementMobile(EtatPaiementMobile.Reussi, null, reference, montant, montant, "XAF")
             : new StatutPaiementMobile(EtatPaiementMobile.Echoue, null, null)); // inconnu (ex : API redémarrée)
 
     // Pas de webhook en simulation : la page de paiement et la tâche de fond interrogent StatutAsync

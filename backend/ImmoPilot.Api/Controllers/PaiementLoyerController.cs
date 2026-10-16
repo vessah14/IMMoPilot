@@ -20,6 +20,7 @@ public class PaiementLoyerController(IPaiementLoyerService service) : Controller
 
     // POST /api/paiement-loyer/{jeton}/paiements → demande Mobile Money pour le mois choisi
     [HttpPost("paiements")]
+    [Idempotent]
     public async Task<ActionResult<PaiementLoyerDto>> Payer(string jeton, PaiementLoyerRequeteDto requete) =>
         await service.PayerAsync(jeton, requete) is { } paiement ? StatusCode(StatusCodes.Status201Created, paiement) : NotFound();
 

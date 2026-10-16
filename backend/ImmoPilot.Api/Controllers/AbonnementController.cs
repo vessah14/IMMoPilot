@@ -21,6 +21,7 @@ public class AbonnementController(IAbonnementService service) : ControllerBase
     // POST /api/abonnement/paiements → envoie la demande de paiement sur le téléphone
     [HttpPost("paiements")]
     [EnableRateLimiting("authentification")]
+    [Idempotent]
     public async Task<ActionResult<PaiementAbonnementDto>> Payer(PaiementAbonnementRequeteDto requete) =>
         StatusCode(StatusCodes.Status201Created, await service.PayerAsync(requete));
 

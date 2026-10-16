@@ -27,6 +27,8 @@ builder.Logging.AddProvider(new FournisseurJournalMemoire(journalMemoire));
 var connexion = ChaineConnexion.Normaliser(builder.Configuration.GetConnectionString("ImmoPilot"),
     LoggerFactory.Create(l => l.AddConsole()).CreateLogger("Configuration"));
 builder.Services.AddDbContext<ImmoPilotDbContext>(options => options.UseNpgsql(connexion));
+// Numéros Mobile Money chiffrés en base (AES-256-GCM) avec la clé Chiffrement:Cle (variable Chiffrement__Cle)
+ChiffrementChamps.Configurer(builder.Configuration["Chiffrement:Cle"]);
 
 // ---- Services : une interface → une implémentation ----
 builder.Services.AddHttpContextAccessor();
@@ -276,6 +278,10 @@ app.MapControllers();
     var etatPaiements = EtatServeur.ModePaiements(c, simulationPaiement, modeDemo, app.Environment.IsDevelopment());
     var webhookSaspay = string.IsNullOrWhiteSpace(c["Saspay:SecretWebhook"]) ? ", webhook non vérifiable (Saspay__SecretWebhook absent)" : "";
     app.Logger.LogWarning("Paiements : {Etat}{Webhook}", etatPaiements, cleSaspay.Length > 0 ? webhookSaspay : "");
+    if (ChiffrementChamps.Actif)
+        app.Logger.LogWarning("Chiffrement des numéros Mobile Money : actif (AES-256-GCM)");
+    else if (!app.Environment.IsDevelopment())
+        app.Logger.LogError("Chiffrement des numéros Mobile Money : INACTIF (Chiffrement__Cle absente) — générez une clé avec « openssl rand -base64 32 »");
 
     // Les reversements SasPay n'acceptent que les IP déclarées : on affiche celle par laquelle l'API sort aujourd'hui
     // (sur Render gratuit, elle peut changer après un redémarrage). En arrière-plan, sans retarder le démarrage.

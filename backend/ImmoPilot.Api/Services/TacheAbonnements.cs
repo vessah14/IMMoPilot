@@ -1,4 +1,6 @@
+using ImmoPilot.Api.Data;
 using ImmoPilot.Api.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace ImmoPilot.Api.Services;
 
@@ -15,6 +17,9 @@ public class TacheAbonnements(IServiceScopeFactory scopes, EtatServeur serveur, 
             // Chaque partie a sa propre portée : une panne des abonnements ne bloque pas les reversements, et inversement
             await ExecuterAsync<IAbonnementService>(s => s.TacheDeFondAsync(), "abonnements");
             await ExecuterAsync<IPaiementLoyerService>(s => s.TacheDeFondAsync(), "loyers");
+            // Clés d'idempotence de plus de 24 h : plus utiles (un nouvel envoi aussi tardif est une nouvelle opération)
+            await ExecuterAsync<ImmoPilotDbContext>(db => db.RequetesIdempotentes
+                .Where(r => r.DateCreation < DateTime.UtcNow.AddHours(-24)).ExecuteDeleteAsync(), "nettoyage");
         } while (await minuterie.WaitForNextTickAsync(arret));
     }
 

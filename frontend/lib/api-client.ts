@@ -19,15 +19,22 @@ type Options = {
   methode?: "GET" | "POST" | "PUT" | "DELETE";
   corps?: unknown; // envoyé en JSON
   formulaire?: FormData; // envoi de fichier (multipart)
+  cleIdempotence?: string; // même clé = même opération : l'API ne l'exécute qu'une fois (voir useCleIdempotence)
 };
 
-export async function apiClient<T = void>(chemin: string, { methode = "GET", corps, formulaire }: Options = {}): Promise<T> {
+export async function apiClient<T = void>(
+  chemin: string,
+  { methode = "GET", corps, formulaire, cleIdempotence }: Options = {},
+): Promise<T> {
   let reponse: Response;
   try {
     reponse = await fetch(`${API_URL_PUBLIQUE}/api${chemin}`, {
       method: methode,
       credentials: "include",
-      headers: corps !== undefined ? { "Content-Type": "application/json" } : undefined,
+      headers: {
+        ...(corps !== undefined && { "Content-Type": "application/json" }),
+        ...(cleIdempotence && { "Idempotency-Key": cleIdempotence }),
+      },
       body: formulaire ?? (corps !== undefined ? JSON.stringify(corps) : undefined),
     });
   } catch {

@@ -10,8 +10,27 @@ public record DemandePaiementMobile(string Reference, string? CodeUssd, string? 
 
 public enum EtatPaiementMobile { EnAttente, Reussi, Echoue }
 
-// MontantNet : ce qui arrive réellement (paiement : sur notre wallet ; reversement : chez le bénéficiaire), frais déduits
-public record StatutPaiementMobile(EtatPaiementMobile Etat, string? Operateur, string? ReferenceOperateur, decimal? MontantNet = null);
+// MontantNet : ce qui arrive réellement (paiement : sur notre wallet ; reversement : chez le bénéficiaire), frais déduits.
+// MontantDemande et Devise : ce que le prestataire a réellement traité, contrôlés avant toute confirmation.
+public record StatutPaiementMobile(
+    EtatPaiementMobile Etat,
+    string? Operateur,
+    string? ReferenceOperateur,
+    decimal? MontantNet = null,
+    decimal? MontantDemande = null,
+    string? Devise = null)
+{
+    // Vérification obligatoire côté serveur : un paiement « réussi » ne vaut que s'il porte exactement
+    // sur le montant attendu, en francs CFA (XAF). null = conforme, sinon la raison du refus.
+    public string? Anomalie(decimal montantAttendu)
+    {
+        if (MontantDemande is null || Devise is null) return "montant ou devise absents de la réponse du prestataire";
+        if (!string.Equals(Devise, "XAF", StringComparison.OrdinalIgnoreCase)) return $"devise {Devise} au lieu de XAF";
+        return decimal.Round(MontantDemande.Value) != decimal.Round(montantAttendu)
+            ? $"montant {MontantDemande:0.##} XAF au lieu de {montantAttendu:0.##} XAF"
+            : null;
+    }
+}
 
 // Résultat de l'envoi d'un reversement :
 //   Accepte   : reversement créé (Reference), sa confirmation arrive ensuite

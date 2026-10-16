@@ -160,11 +160,14 @@ public class SaspayService(HttpClient http, IConfiguration configuration, TimePr
         if (etat == EtatPaiementMobile.Echoue)
             journal.LogWarning("{Nature} SasPay {Reference} échoué : {Corps}", nature, reference, corps);
 
-        var net = decimal.TryParse(Texte(d, "net_amount"), NumberStyles.Number, CultureInfo.InvariantCulture, out var n) ? n : (decimal?)null;
         var referenceOperateur = Texte(d, "external_reference");
         if (string.IsNullOrWhiteSpace(referenceOperateur)) referenceOperateur = Texte(d, "reference");
-        return new StatutPaiementMobile(etat, null, referenceOperateur, net);
+        return new StatutPaiementMobile(etat, null, referenceOperateur,
+            Montant(Texte(d, "net_amount")), Montant(Texte(d, "requested_amount")), Texte(d, "currency"));
     }
+
+    private static decimal? Montant(string? texte) =>
+        decimal.TryParse(texte, NumberStyles.Number, CultureInfo.InvariantCulture, out var m) ? m : null;
 
     // Code d'erreur stable de SasPay : { "error": { "code": "insufficient_balance" } }
     private static string? CodeErreur(string corps)

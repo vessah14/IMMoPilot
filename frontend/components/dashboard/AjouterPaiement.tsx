@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import Input, { styleChamp } from "@/components/ui/Input";
 import FormulaireModal, { ChampSelect } from "@/components/ui/FormulaireModal";
 import { apiClient } from "@/lib/api-client";
+import { useCleIdempotence } from "@/lib/idempotence";
 import { libellesMoyen } from "@/lib/format";
 
 type LocataireChoix = { id: number; libelle: string; loyer: number };
@@ -13,10 +14,12 @@ export default function AjouterPaiement({ locataires }: { locataires: LocataireC
   // Le montant est prérempli avec le loyer du locataire choisi (modifiable)
   const [montant, setMontant] = useState("");
   const aujourdhui = new Date().toISOString().slice(0, 10);
+  const idempotence = useCleIdempotence(); // un double envoi n'enregistre le paiement qu'une fois
 
   const enregistrer = async (d: FormData) => {
     await apiClient("/paiements", {
       methode: "POST",
+      cleIdempotence: idempotence.cle(),
       corps: {
         locataireId: Number(d.get("locataire")),
         montant: Number(d.get("montant")),
@@ -27,6 +30,7 @@ export default function AjouterPaiement({ locataires }: { locataires: LocataireC
         statut: d.get("statut"),
       },
     });
+    idempotence.renouveler(); // paiement enregistré : le prochain sera une nouvelle opération
     setMontant("");
   };
 

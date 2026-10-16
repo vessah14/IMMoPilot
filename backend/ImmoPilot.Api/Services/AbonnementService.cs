@@ -209,6 +209,14 @@ public class AbonnementService(
     {
         if (paiement.ReferencePaiement is null) return;
         var statut = await paiements.StatutAsync(paiement.ReferencePaiement);
+        // Vérification obligatoire : SasPay doit avoir encaissé exactement le prix de la formule, en XAF
+        if (statut.Etat == EtatPaiementMobile.Reussi && statut.Anomalie(paiement.Montant) is { } anomalie)
+        {
+            journal.LogError("Paiement d'abonnement {Id} NON confirmé ({Anomalie}) : à vérifier dans le tableau de bord SasPay",
+                paiement.Id, anomalie);
+            await MarquerEchoueAsync(paiement, notifier: false);
+            return;
+        }
         if (statut.Etat == EtatPaiementMobile.Reussi) await ConfirmerAsync(paiement, statut.Operateur, statut.ReferenceOperateur);
         else if (statut.Etat == EtatPaiementMobile.Echoue) await MarquerEchoueAsync(paiement, notifier: true);
     }

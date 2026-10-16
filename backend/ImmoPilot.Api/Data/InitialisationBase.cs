@@ -32,6 +32,9 @@ public static class InitialisationBase
 
         await db.SaveChangesAsync();
 
+        // Numéros Mobile Money encore en clair (enregistrés avant le chiffrement) : chiffrés maintenant
+        await ChiffrementChamps.ChiffrerAnciensAsync(db, journal);
+
         // Premier compte super administrateur, créé à partir de la configuration (user secrets / variables d'environnement)
         var email = app.Configuration["SuperAdmin:Email"];
         var motDePasse = app.Configuration["SuperAdmin:MotDePasse"];

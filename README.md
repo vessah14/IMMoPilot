@@ -108,6 +108,7 @@ Quatre conteneurs : `db` (PostgreSQL 17), `api` (`backend/Dockerfile`), `fronten
 | `Demo__Actif` | `true` (paiements simulés, aucun argent réel) ; à retirer pour encaisser avec SasPay |
 | `Saspay__CleApi` | clé secrète SasPay (tableau de bord → Développeur) : `sk_test_…` pour tester, `sk_live_…` pour l'argent réel |
 | `Saspay__SecretWebhook` | secret de signature du webhook SasPay (affiché une seule fois à sa création) |
+| `Chiffrement__Cle` | 32 octets en base64 (`node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`) : chiffre en AES-256-GCM les numéros Mobile Money stockés en base. **À sauvegarder** : sans elle, ces numéros sont illisibles |
 | `SuperAdmin__Email`, `SuperAdmin__MotDePasse` | compte super admin (mot de passe de 12 caractères minimum) |
 | `SuperAdmin__Reinitialiser` | `true` le temps d'un redémarrage pour remplacer l'e-mail et le mot de passe du super admin existant (puis retirer) |
 | `SuperAdmin__FrontendUrl` | adresse du super admin (lien « mot de passe oublié ») |

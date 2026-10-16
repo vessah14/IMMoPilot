@@ -8,6 +8,7 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { Badge } from "@/components/dashboard/Filtres";
 import { apiClient, ErreurApi } from "@/lib/api-client";
+import { useCleIdempotence } from "@/lib/idempotence";
 import { fcfa, dateCourte } from "@/lib/format";
 import type { Abonnement, EtatAbonnement, Formule, PaiementAbonnement, Utilisateur } from "@/lib/types";
 
@@ -55,6 +56,7 @@ export default function OngletAbonnement({
   const [enCours, setEnCours] = useState<PaiementAbonnement | null>(null); // paiement en attente de validation
   const [resultat, setResultat] = useState<PaiementAbonnement | null>(null);
   const [redirection, setRedirection] = useState(false); // départ vers la page de paiement SasPay
+  const idempotence = useCleIdempotence(); // un double envoi ne crée qu'une seule demande de paiement
   const minuterie = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Retour depuis la page de paiement SasPay : on reprend le suivi de ce paiement
@@ -115,8 +117,10 @@ export default function OngletAbonnement({
     try {
       const p = await apiClient<PaiementAbonnement>("/abonnement/paiements", {
         methode: "POST",
+        cleIdempotence: idempotence.cle(),
         corps: { formule, dureeMois: duree, telephone },
       });
+      idempotence.renouveler(); // demande créée : un prochain paiement sera une nouvelle opération
       // Orange Money (et parfois MTN) : le paiement se fait sur la page SasPay, puis retour automatique ici
       if (p.urlPaiement) {
         setRedirection(true);
