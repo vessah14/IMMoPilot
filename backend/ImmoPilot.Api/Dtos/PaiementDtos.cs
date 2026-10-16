@@ -24,4 +24,6 @@ public record PaiementDto(
     string? Reference,
     StatutPaiement Statut,
     StatutReversement? Reversement, // loyer payé en ligne : où en est son reversement au propriétaire
-    decimal? MontantReverse); // reçu par le propriétaire, frais déduits
+    decimal? MontantReverse, // reçu par le propriétaire, frais déduits
+    DateTime? DateReversement, // dernier essai de reversement, puis date de réception
+    string? ErreurReversement); // raison de l'attente ou de l'échec du reversement

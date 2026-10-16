@@ -25,7 +25,21 @@ function Reversement({ p }: { p: Paiement }) {
         ? "Reversement à régulariser (support)"
         : "Reversement en cours…";
   const style = p.reversement === "Reverse" ? "text-green-700" : p.reversement === "Echoue" ? "text-red-600" : "text-gray-500";
-  return <p className={`text-xs font-normal ${style}`}>{texte}</p>;
+  // Tant que l'argent n'est pas reçu : raison du blocage et heure du dernier essai (nouvel essai automatique)
+  const essai = p.dateReversement
+    ? new Date(p.dateReversement).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+    : null;
+  return (
+    <div className="ml-auto max-w-64 whitespace-normal text-xs font-normal">
+      <p className={style}>{texte}</p>
+      {p.reversement !== "Reverse" && (p.erreurReversement || essai) && (
+        <p className="text-gray-400">
+          {p.erreurReversement}
+          {essai && ` (dernier essai le ${essai})`}
+        </p>
+      )}
+    </div>
+  );
 }
 
 export default function ListePaiements({ paiements }: { paiements: Paiement[] }) {

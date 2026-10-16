@@ -100,6 +100,8 @@ export type Paiement = {
   statut: StatutPaiement;
   reversement: StatutReversement | null; // loyer payé en ligne : reversement au propriétaire
   montantReverse: number | null; // reçu par le propriétaire, frais déduits
+  dateReversement: string | null; // dernier essai de reversement, puis date de réception
+  erreurReversement: string | null; // raison de l'attente ou de l'échec du reversement
 };
 
 export type StatutReversement = "AFaire" | "EnCours" | "Reverse" | "Echoue";
