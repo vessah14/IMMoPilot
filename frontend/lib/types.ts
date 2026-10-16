@@ -37,7 +37,7 @@ export type Utilisateur = {
   notificationsNonLues: number;
   utilisation: { immeubles: number; limiteImmeubles: number | null; locataires: number; limiteLocataires: number | null };
   compteEncaissement: string | null; // numéro Mobile Money qui reçoit les loyers payés en ligne (2376XXXXXXXX)
-  fonctionnalites: Fonctionnalite[]; // fonctions comprises dans la formule (le reste est refusé par l'API)
+  fonctionnalites?: Fonctionnalite[]; // fonctions comprises dans la formule (le reste est refusé par l'API)
 };
 
 export type Immeuble = {

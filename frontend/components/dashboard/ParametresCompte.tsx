@@ -10,6 +10,7 @@ import { apiClient, ErreurApi } from "@/lib/api-client";
 import { dateCourte } from "@/lib/format";
 import OngletAbonnement from "@/components/dashboard/OngletAbonnement";
 import { FonctionReservee } from "@/components/dashboard/Formule";
+import { aAcces } from "@/lib/formule";
 import type { Abonnement, Formule, StatutTicket, Ticket, Utilisateur } from "@/lib/types";
 
 const onglets = [
@@ -199,7 +200,7 @@ export default function ParametresCompte({ moi, tickets, abonnement, ongletIniti
         {onglet === "support" && (
           <>
             {/* Support depuis l'espace : formules Pro et Enterprise (l'API refuse aussi l'envoi pour Starter) */}
-            {!moi.fonctionnalites.includes("Support") ? (
+            {!aAcces(moi, "Support") ? (
               <FonctionReservee
                 fonction="Support"
                 titre="Le support depuis votre espace est inclus dans la formule Pro"

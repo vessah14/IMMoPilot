@@ -5,13 +5,14 @@ import BoutonExport from "@/components/ui/BoutonExport";
 import { EnTetePage } from "@/components/dashboard/Filtres";
 import { FonctionReservee } from "@/components/dashboard/Formule";
 import { apiServeur, utilisateurConnecte } from "@/lib/api-serveur";
+import { aAcces } from "@/lib/formule";
 import { fcfa, moisCourt, nomMois, dateCourte, libellesMoyen } from "@/lib/format";
 import type { Rapport } from "@/lib/types";
 
 export default async function Rapports() {
   // Rapports financiers : formules Pro et Enterprise (l'API refuse aussi la demande pour Starter)
   const moi = await utilisateurConnecte();
-  if (!moi.fonctionnalites.includes("Rapports"))
+  if (!aAcces(moi, "Rapports"))
     return (
       <section className="flex flex-col gap-8">
         <EnTetePage titre="Rapports" sousTitre="Revenus des 12 derniers mois, taux d'occupation, loyers impayés et exports Excel." />
