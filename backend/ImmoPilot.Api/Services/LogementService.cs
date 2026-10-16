@@ -29,7 +29,7 @@ public class LogementService(ImmoPilotDbContext db, IUtilisateurCourant moi) : I
         await VerifierAsync(requete, idActuel: null);
 
         var logement = new Logement { Reference = requete.Reference.Trim() };
-        Appliquer(logement, requete);
+        Appliquer(logement, requete, await ProprietairesMultiplesAsync());
         db.Logements.Add(logement);
         await db.SaveChangesAsync();
         return (await ObtenirAsync(logement.Id))!;
@@ -49,7 +49,7 @@ public class LogementService(ImmoPilotDbContext db, IUtilisateurCourant moi) : I
         if (!occupe && requete.Statut == StatutLogement.Occupe)
             throw new RegleMetierException("Attribuez un locataire au logement pour le passer en « Occupé ».");
 
-        Appliquer(logement, requete);
+        Appliquer(logement, requete, await ProprietairesMultiplesAsync());
         await db.SaveChangesAsync();
         return await ObtenirAsync(id);
     }
@@ -83,7 +83,13 @@ public class LogementService(ImmoPilotDbContext db, IUtilisateurCourant moi) : I
             throw new RegleMetierException($"La référence « {reference} » existe déjà dans cet immeuble.");
     }
 
-    private static void Appliquer(Logement logement, LogementRequeteDto r)
+// Plusieurs propriétaires par parc (bénéficiaire par immeuble / logement) : formule Enterprise.
+    // Sinon les champs envoyés sont ignorés (et un propriétaire déjà enregistré est conservé).
+    private async Task<bool> ProprietairesMultiplesAsync() =>
+        LimitesFormule.Autorise(await db.Utilisateurs.Where(u => u.Id == moi.Id).Select(u => u.Formule).FirstAsync(),
+            Fonctionnalite.ProprietairesMultiples);
+
+    private static void Appliquer(Logement logement, LogementRequeteDto r, bool proprietairesMultiples)
     {
         logement.ImmeubleId = r.ImmeubleId;
         logement.Reference = r.Reference.Trim();
@@ -93,6 +99,7 @@ public class LogementService(ImmoPilotDbContext db, IUtilisateurCourant moi) : I
         logement.Loyer = r.Loyer;
         logement.Charges = r.Charges;
         if (r.Statut is not null) logement.Statut = r.Statut.Value;
+        if (!proprietairesMultiples) return;
         logement.BeneficiaireNom = Beneficiaires.NomOuNull(r.BeneficiaireNom);
         logement.BeneficiaireCompte = Beneficiaires.NumeroOuNull(r.BeneficiaireCompte);
     }

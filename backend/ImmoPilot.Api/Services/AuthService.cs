@@ -119,7 +119,8 @@ public class AuthService(
                 LimitesFormule.Immeubles(u.Formule),
                 await db.Locataires.CountAsync(l => l.ProprietaireId == u.Id && l.LogementId != null),
                 LimitesFormule.Locataires(u.Formule)),
-            u.CompteEncaissement);
+            u.CompteEncaissement,
+            LimitesFormule.Fonctionnalites(u.Formule));
     }
 
     public async Task<UtilisateurDto> ModifierProfilAsync(ProfilDto r)

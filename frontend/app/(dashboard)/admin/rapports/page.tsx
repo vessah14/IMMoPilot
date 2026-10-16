@@ -3,11 +3,26 @@ import CarteStat from "@/components/dashboard/CarteStat";
 import GraphiqueRevenus from "@/components/ui/GraphiqueRevenus";
 import BoutonExport from "@/components/ui/BoutonExport";
 import { EnTetePage } from "@/components/dashboard/Filtres";
-import { apiServeur } from "@/lib/api-serveur";
+import { FonctionReservee } from "@/components/dashboard/Formule";
+import { apiServeur, utilisateurConnecte } from "@/lib/api-serveur";
 import { fcfa, moisCourt, nomMois, dateCourte, libellesMoyen } from "@/lib/format";
 import type { Rapport } from "@/lib/types";
 
 export default async function Rapports() {
+  // Rapports financiers : formules Pro et Enterprise (l'API refuse aussi la demande pour Starter)
+  const moi = await utilisateurConnecte();
+  if (!moi.fonctionnalites.includes("Rapports"))
+    return (
+      <section className="flex flex-col gap-8">
+        <EnTetePage titre="Rapports" sousTitre="Revenus des 12 derniers mois, taux d'occupation, loyers impayés et exports Excel." />
+        <FonctionReservee
+          fonction="Rapports"
+          titre="Les rapports financiers sont inclus dans la formule Pro"
+          texte="Suivez vos revenus mois par mois, votre taux d'encaissement et vos impayés, et exportez vos données vers Excel."
+        />
+      </section>
+    );
+
   const r = await apiServeur<Rapport>("/rapports");
 
   // Part des loyers attendus effectivement encaissée, en moyenne sur 12 mois

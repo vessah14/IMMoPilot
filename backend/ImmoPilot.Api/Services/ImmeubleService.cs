@@ -41,7 +41,7 @@ public class ImmeubleService(ImmoPilotDbContext db, IUtilisateurCourant moi, ISt
             Quartier = requete.Quartier.Trim(),
             ProprietaireId = moi.Id,
         };
-        Appliquer(immeuble, requete);
+        Appliquer(immeuble, requete, await ProprietairesMultiplesAsync());
         db.Immeubles.Add(immeuble);
         await db.SaveChangesAsync();
         return (await ObtenirAsync(immeuble.Id))!;
@@ -52,7 +52,7 @@ public class ImmeubleService(ImmoPilotDbContext db, IUtilisateurCourant moi, ISt
         var immeuble = await MesImmeubles.FirstOrDefaultAsync(i => i.Id == id);
         if (immeuble is null) return null;
 
-        Appliquer(immeuble, requete);
+        Appliquer(immeuble, requete, await ProprietairesMultiplesAsync());
         await db.SaveChangesAsync();
         return await ObtenirAsync(id);
     }
@@ -97,7 +97,13 @@ public class ImmeubleService(ImmoPilotDbContext db, IUtilisateurCourant moi, ISt
     }
 
     // Copie les champs de la requête dans l'entité
-    private static void Appliquer(Immeuble immeuble, ImmeubleRequeteDto r)
+// Plusieurs propriétaires par parc (bénéficiaire par immeuble / logement) : formule Enterprise.
+    // Sinon les champs envoyés sont ignorés (et un propriétaire déjà enregistré est conservé).
+    private async Task<bool> ProprietairesMultiplesAsync() =>
+        LimitesFormule.Autorise(await db.Utilisateurs.Where(u => u.Id == moi.Id).Select(u => u.Formule).FirstAsync(),
+            Fonctionnalite.ProprietairesMultiples);
+
+    private static void Appliquer(Immeuble immeuble, ImmeubleRequeteDto r, bool proprietairesMultiples)
     {
         immeuble.Nom = r.Nom.Trim();
         immeuble.Type = r.Type!.Value; // [Required] garantit la présence
@@ -107,6 +113,7 @@ public class ImmeubleService(ImmoPilotDbContext db, IUtilisateurCourant moi, ISt
         immeuble.Quartier = r.Quartier.Trim();
         immeuble.NombreEtages = r.NombreEtages;
         immeuble.AnneeConstruction = r.AnneeConstruction;
+        if (!proprietairesMultiples) return;
         immeuble.BeneficiaireNom = Beneficiaires.NomOuNull(r.BeneficiaireNom);
         immeuble.BeneficiaireCompte = Beneficiaires.NumeroOuNull(r.BeneficiaireCompte);
     }

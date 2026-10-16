@@ -8,6 +8,9 @@ export type StatutPaiement = "Confirme" | "EnAttente" | "Echoue";
 export type SituationPaiement = "AJour" | "Retard" | "Impaye";
 export type StatutEcheance = "Paye" | "Partiel" | "EnAttente" | "Impaye";
 export type Formule = "Starter" | "Pro" | "Enterprise";
+
+// Fonctions réservées : relances, rapports et exports, support (Pro et Enterprise), plusieurs propriétaires (Enterprise)
+export type Fonctionnalite = "Relances" | "Rapports" | "ProprietairesMultiples" | "Support";
 export type ProfilGestion = "Proprietaire" | "Agence" | "Sci";
 export type TypeNotification = "Paiement" | "Retard" | "Bail" | "Maintenance" | "Systeme";
 export type PrioriteTicket = "Basse" | "Moyenne" | "Haute";
@@ -34,6 +37,7 @@ export type Utilisateur = {
   notificationsNonLues: number;
   utilisation: { immeubles: number; limiteImmeubles: number | null; locataires: number; limiteLocataires: number | null };
   compteEncaissement: string | null; // numéro Mobile Money qui reçoit les loyers payés en ligne (2376XXXXXXXX)
+  fonctionnalites: Fonctionnalite[]; // fonctions comprises dans la formule (le reste est refusé par l'API)
 };
 
 export type Immeuble = {

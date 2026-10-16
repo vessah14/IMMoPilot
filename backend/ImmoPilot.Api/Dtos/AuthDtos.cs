@@ -60,4 +60,5 @@ public record UtilisateurDto(
     EtatAbonnement EtatAbonnement,
     int NotificationsNonLues,
     UtilisationDto Utilisation,
-    string? CompteEncaissement); // numéro Mobile Money de réception des loyers
+    string? CompteEncaissement, // numéro Mobile Money de réception des loyers
+    IReadOnlyList<Fonctionnalite> Fonctionnalites); // fonctions comprises dans la formule (cadenas sur le site)

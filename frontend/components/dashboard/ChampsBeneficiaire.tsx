@@ -1,6 +1,12 @@
-import Input from "@/components/ui/Input";
+"use client";
 
-// Propriétaire du bien qui reçoit les loyers payés en ligne (immeuble ou logement), facultatif
+import Link from "next/link";
+import { Lock } from "lucide-react";
+import Input from "@/components/ui/Input";
+import { lienFormule, useAcces } from "@/components/dashboard/Formule";
+
+// Propriétaire du bien qui reçoit les loyers payés en ligne (immeuble ou logement), facultatif.
+// Plusieurs propriétaires par parc : formule Enterprise (sinon l'API ignore ces champs).
 export default function ChampsBeneficiaire({
   prefixe = "",
   nom,
@@ -12,6 +18,24 @@ export default function ChampsBeneficiaire({
   compte?: string | null; // 2376XXXXXXXX
   aide: string;
 }) {
+  const autorise = useAcces("ProprietairesMultiples");
+
+  if (!autorise)
+    return (
+      <div className="sm:col-span-2 flex items-start gap-3 rounded-lg border border-dashed border-gray-300 p-4">
+        <Lock className="mt-0.5 size-4 shrink-0 text-gray-400" />
+        <p className="text-sm text-gray-600">
+          Les loyers payés en ligne arrivent sur votre numéro de réception (Paramètres → Agence).
+          {nom && ` Propriétaire déjà enregistré : ${nom} (conservé).`} Un propriétaire différent par immeuble ou par logement
+          est inclus dans la formule{" "}
+          <Link href={lienFormule("ProprietairesMultiples")} className="font-medium text-blue-600 hover:underline">
+            Enterprise
+          </Link>
+          .
+        </p>
+      </div>
+    );
+
   return (
     <div className="sm:col-span-2 flex flex-col gap-3 rounded-lg border border-dashed border-gray-300 p-4">
       <div>

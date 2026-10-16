@@ -9,6 +9,7 @@ import { Badge } from "@/components/dashboard/Filtres";
 import { apiClient, ErreurApi } from "@/lib/api-client";
 import { dateCourte } from "@/lib/format";
 import OngletAbonnement from "@/components/dashboard/OngletAbonnement";
+import { FonctionReservee } from "@/components/dashboard/Formule";
 import type { Abonnement, Formule, StatutTicket, Ticket, Utilisateur } from "@/lib/types";
 
 const onglets = [
@@ -197,6 +198,14 @@ export default function ParametresCompte({ moi, tickets, abonnement, ongletIniti
 
         {onglet === "support" && (
           <>
+            {/* Support depuis l'espace : formules Pro et Enterprise (l'API refuse aussi l'envoi pour Starter) */}
+            {!moi.fonctionnalites.includes("Support") ? (
+              <FonctionReservee
+                fonction="Support"
+                titre="Le support depuis votre espace est inclus dans la formule Pro"
+                texte="Posez vos questions à l'équipe IMMO PILOT et suivez ses réponses ici. Pour payer votre abonnement, l'onglet Abonnement reste accessible."
+              />
+            ) : (
             <SectionParametres
               titre="Contacter le support"
               description="Une question, un problème, un changement de formule ? L'équipe IMMO PILOT vous répond ici."
@@ -225,6 +234,7 @@ export default function ParametresCompte({ moi, tickets, abonnement, ongletIniti
                 </div>
               </div>
             </SectionParametres>
+            )}
 
             <div className="rounded-xl bg-white shadow-sm border border-gray-100">
               <h2 className="px-6 pt-5 pb-3 text-lg font-semibold text-gray-900">Mes demandes</h2>

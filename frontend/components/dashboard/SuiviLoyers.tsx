@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import CarteStat from "@/components/dashboard/CarteStat";
 import { Pastilles, Badge, EtatVide } from "@/components/dashboard/Filtres";
+import { BoutonReserve, useAcces } from "@/components/dashboard/Formule";
 import { apiClient, ErreurApi, URL_SITE } from "@/lib/api-client";
 import { fcfa, nomMois, dateCourte } from "@/lib/format";
 import type { Echeance, StatutEcheance } from "@/lib/types";
@@ -53,6 +54,7 @@ export default function SuiviLoyers({
   const [erreur, setErreur] = useState("");
   const [filtre, setFiltre] = useState<StatutEcheance | "tous">("tous");
   const [relanceEnCours, setRelanceEnCours] = useState<number | null>(null);
+  const peutRelancer = useAcces("Relances"); // relances e-mail / WhatsApp : formules Pro et Enterprise
 
   const changerMois = async (n: number) => {
     const nouveau = decalerMois(mois, n);
@@ -204,7 +206,8 @@ export default function SuiviLoyers({
                     <div className="hidden md:block">
                       <Badge {...statuts[e.statut]} />
                     </div>
-                    {e.statut !== "Paye" && (
+                    {e.statut !== "Paye" && !peutRelancer && <BoutonReserve fonction="Relances" label="Relancer" />}
+                    {e.statut !== "Paye" && peutRelancer && (
                       <div className="flex flex-col items-end gap-1">
                         <div className="flex items-center gap-2">
                           <a

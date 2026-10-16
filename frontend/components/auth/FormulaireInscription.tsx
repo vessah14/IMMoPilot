@@ -64,7 +64,12 @@ const construireFormules = (offre: Offre) =>
     points: [
       f.limiteImmeubles ? `Jusqu'à ${f.limiteImmeubles} immeubles` : "Immeubles illimités",
       f.limiteLocataires ? `${f.limiteLocataires} locataires` : "Locataires illimités",
-      "Loyers, relances et rapports",
+      // Même répartition que l'API : relances, rapports et support dès Pro, plusieurs propriétaires en Enterprise
+      f.formule === "Starter"
+        ? "Suivi des loyers et paiement en ligne"
+        : f.formule === "Pro"
+          ? "Relances, rapports et exports, support"
+          : "Tout Pro + plusieurs propriétaires par parc",
     ],
   }));
 

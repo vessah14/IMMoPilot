@@ -2,6 +2,7 @@
 
 import { Download } from "lucide-react";
 import Button from "@/components/ui/Button";
+import { BoutonReserve, useAcces } from "@/components/dashboard/Formule";
 
 type Props = {
   nomFichier: string; // sans extension, ex : "immeubles"
@@ -12,6 +13,9 @@ type Props = {
 
 // Télécharge les données sous forme de fichier CSV (s'ouvre dans Excel ou LibreOffice)
 export default function BoutonExport({ nomFichier, entetes, lignes, label = "Exporter" }: Props) {
+  // Exports CSV : compris dans les formules Pro et Enterprise (comme les rapports)
+  const autorise = useAcces("Rapports");
+
   const exporter = () => {
     // Point-virgule : séparateur attendu par Excel en français ; guillemets doublés dans les valeurs
     const cellule = (v: string | number | null) => `"${String(v ?? "").replace(/"/g, '""')}"`;
@@ -25,6 +29,8 @@ export default function BoutonExport({ nomFichier, entetes, lignes, label = "Exp
     lien.click();
     URL.revokeObjectURL(lien.href);
   };
+
+  if (!autorise) return <BoutonReserve fonction="Rapports" label={label} />;
 
   return (
     <Button variant="outline" icon={Download} onClick={exporter} disabled={lignes.length === 0}>

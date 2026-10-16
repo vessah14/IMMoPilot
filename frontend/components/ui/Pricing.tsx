@@ -49,13 +49,13 @@ export default function Pricing({ prix = prixParDefaut }: { prix?: Prix }) {
                 <Check size={18} className="text-green-500 shrink-0" />
                 Paiement en ligne des loyers
               </li>
-              <li className="flex items-center gap-3 text-sm text-gray-600">
-                <Check size={18} className="text-green-500 shrink-0" />
-                Rapports et exports CSV
+              <li className="flex items-center gap-3 text-sm text-gray-400">
+                <X size={18} className="text-gray-300 shrink-0" />
+                Relances e-mail / WhatsApp
               </li>
               <li className="flex items-center gap-3 text-sm text-gray-400">
                 <X size={18} className="text-gray-300 shrink-0" />
-                Support prioritaire
+                Rapports et exports CSV
               </li>
             </ul>
             <Link href="/inscription?formule=Starter" className="mt-8 w-full border border-blue-600 text-blue-600 py-3 rounded-full font-semibold hover:bg-blue-50 transition block text-center">
@@ -93,7 +93,7 @@ export default function Pricing({ prix = prixParDefaut }: { prix?: Prix }) {
               </li>
               <li className="flex items-center gap-3 text-sm text-gray-600">
                 <Check size={18} className="text-green-500 shrink-0" />
-                Rapports financiers
+                Rapports financiers et exports CSV
               </li>
               <li className="flex items-center gap-3 text-sm text-gray-600">
                 <Check size={18} className="text-green-500 shrink-0" />

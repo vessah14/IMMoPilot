@@ -23,6 +23,7 @@ public class TableauDeBordController(ITableauDeBordService service) : Controller
 public class RapportsController(IRapportService service) : ControllerBase
 {
     [HttpGet]
+    [ReserveA(Fonctionnalite.Rapports)] // formule Pro ou Enterprise
     public async Task<ActionResult<RapportDto>> Obtenir() => Ok(await service.ObtenirAsync());
 }
 
@@ -38,6 +39,7 @@ public class LoyersController(ILoyerService service) : ControllerBase
 
     // POST /api/loyers/relances
     [HttpPost("relances")]
+    [ReserveA(Fonctionnalite.Relances)] // formule Pro ou Enterprise
     public async Task<ActionResult<EcheanceDto>> Relancer(RelanceRequeteDto requete) =>
         await service.RelancerAsync(requete) is { } echeance ? Ok(echeance) : NotFound();
 }
@@ -77,7 +79,9 @@ public class SupportController(ISupportService service) : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<TicketDto>>> MesTickets() => Ok(await service.MesTicketsAsync());
 
+    // Nouveau ticket : formule Pro ou Enterprise (la liste reste consultable par tous)
     [HttpPost]
+    [ReserveA(Fonctionnalite.Support)]
     public async Task<ActionResult<TicketDto>> Creer(TicketRequeteDto requete) =>
         StatusCode(StatusCodes.Status201Created, await service.CreerAsync(requete));
 }
