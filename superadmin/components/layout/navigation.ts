@@ -1,5 +1,5 @@
 // Menu de l'application super administrateur
-import { LayoutDashboard, Briefcase, BadgeDollarSign, UserCog, LifeBuoy, Settings } from "lucide-react";
+import { LayoutDashboard, Briefcase, BadgeDollarSign, UserCog, LifeBuoy, Settings, Activity } from "lucide-react";
 
 export type Lien = {
   path: string;
@@ -30,6 +30,7 @@ export const configSuperAdmin: ConfigEspace = {
     { path: "/abonnements", icon: BadgeDollarSign, name: "Abonnements" },
     { path: "/utilisateurs", icon: UserCog, name: "Utilisateurs" },
     { path: "/support", icon: LifeBuoy, name: "Support" },
+    { path: "/supervision", icon: Activity, name: "Supervision" },
     { path: "/parametres", icon: Settings, name: "Paramètres" },
   ],
 };

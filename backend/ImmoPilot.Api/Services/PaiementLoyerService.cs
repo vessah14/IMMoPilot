@@ -177,6 +177,29 @@ public class PaiementLoyerService(
             });
     }
 
+    public async Task<bool> RelancerReversementAsync(int paiementId)
+    {
+        var p = await db.Paiements.FirstOrDefaultAsync(x => x.Id == paiementId && x.StatutReversement != null);
+        if (p is null || p.StatutReversement == StatutReversement.Reverse) return false;
+        // Reversement déjà envoyé et en attente de réponse : on redemande son statut au lieu de le renvoyer
+        if (p.StatutReversement == StatutReversement.EnCours && p.ReferenceReversement is not null)
+        {
+            await ActualiserReversementAsync(p, await LocataireParIdAsync(p.LocataireId));
+            return true;
+        }
+
+        // Nouveau départ : nouvelle clé (aucun envoi précédent n'a abouti), compteur d'échecs remis à zéro
+        p.StatutReversement = StatutReversement.AFaire;
+        p.EchecsReversement = 0;
+        p.CleReversement = NouvelleCle(p);
+        p.ReferenceReversement = null;
+        p.ErreurReversement = null;
+        await db.SaveChangesAsync();
+        journal.LogInformation("Reversement du loyer {Id} relancé par le super admin", p.Id);
+        await ReverserAsync(p, await LocataireParIdAsync(p.LocataireId));
+        return true;
+    }
+
     // ---- Encaissement ----
 
     // Redemande le statut au prestataire et met le paiement à jour

@@ -88,3 +88,48 @@ export type PaiementAbonnement = {
   dateCreation: string;
   dateConfirmation: string | null;
 };
+
+// ---- Supervision en temps réel ----
+export type StatutReversement = "AFaire" | "EnCours" | "Reverse" | "Echoue";
+
+export type EntreeJournal = {
+  id: number;
+  date: string;
+  niveau: "Trace" | "Debug" | "Information" | "Warning" | "Error" | "Critical";
+  source: string;
+  message: string;
+  exception: string | null;
+};
+
+export type ReversementSupervision = {
+  paiementId: number;
+  locataire: string;
+  bailleur: string;
+  periode: string;
+  montant: number;
+  montantNet: number | null;
+  compte: string;
+  statut: StatutReversement;
+  erreur: string | null;
+  dernierEssai: string | null;
+  echecs: number;
+};
+
+export type Supervision = {
+  maintenant: string;
+  api: { demarreLe: string; version: string | null; environnement: string; ipSortante: string | null; memoireMo: number };
+  base: { ok: boolean; latenceMs: number | null; erreur: string | null };
+  paiements: { mode: string; simulation: boolean; webhookConfigure: boolean };
+  emails: { configures: boolean; mode: string; enFile: number };
+  taches: { nom: string; dernierPassage: string | null; dureeMs: number | null; erreur: string | null }[];
+  compteurs: {
+    loyersEnAttente: number;
+    abonnementsEnAttente: number;
+    reversementsAFaire: number;
+    reversementsEnCours: number;
+    reversementsEchoues: number;
+    reversesAujourdhui: number;
+  };
+  reversements: ReversementSupervision[];
+  journal: EntreeJournal[];
+};

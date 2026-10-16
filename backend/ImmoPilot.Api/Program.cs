@@ -15,6 +15,12 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ---- Supervision en temps réel (page Supervision du super admin) : journal en mémoire et état du serveur ----
+var journalMemoire = new JournalMemoire();
+builder.Services.AddSingleton(journalMemoire);
+builder.Services.AddSingleton<EtatServeur>();
+builder.Logging.AddProvider(new FournisseurJournalMemoire(journalMemoire));
+
 // ---- Base de données (PostgreSQL) ----
 // La chaîne de connexion complète (avec le mot de passe) est dans les "user secrets", pas dans le code (voir README).
 // Lecture tolérante : format Host=… ou adresse postgresql://… de Neon, guillemets et lignes en trop ignorés
@@ -41,6 +47,7 @@ builder.Services.AddScoped<ITableauDeBordService, TableauDeBordService>();
 builder.Services.AddScoped<IRapportService, RapportService>();
 builder.Services.AddScoped<ISupportService, SupportService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<ISupervisionService, SupervisionService>();
 builder.Services.AddHttpClient<IStockagePhotos, CloudinaryService>();
 // Paiements : SasPay (clé Saspay:CleApi), ou simulateur (sans argent réel) :
 // - en développement si Paiement:Simulation = true ;
@@ -200,7 +207,7 @@ app.Use(async (contexte, suite) =>
 {
     var chemin = contexte.Request.Path;
     if (chemin.StartsWithSegments("/api") && !chemin.StartsWithSegments("/api/admin") && !chemin.StartsWithSegments("/api/offre")
-        && !chemin.StartsWithSegments("/api/saspay"))
+        && !chemin.StartsWithSegments("/api/saspay") && !chemin.StartsWithSegments("/api/sante"))
     {
         var parametres = await contexte.RequestServices.GetRequiredService<IParametresService>().ObtenirAsync();
         if (parametres.ModeMaintenance)
@@ -266,11 +273,7 @@ app.MapControllers();
 
     // Paiements des abonnements : simulateur, ou SasPay en test / production selon le préfixe de la clé
     var cleSaspay = c["Saspay:CleApi"]?.Trim() ?? "";
-    var etatPaiements = modeDemo ? "simulateur (mode démo : aucun argent réel)"
-        : app.Environment.IsDevelopment() && c.GetValue<bool>("Paiement:Simulation") ? "simulateur (développement)"
-        : cleSaspay.StartsWith("sk_test_", StringComparison.Ordinal) ? "SasPay en TEST (clé sk_test_ : aucun argent réel)"
-        : cleSaspay.StartsWith("sk_live_", StringComparison.Ordinal) ? "SasPay en PRODUCTION (clé sk_live_ : argent réel)"
-        : "NON configurés (Saspay__CleApi absente) : le paiement en ligne des abonnements est désactivé";
+    var etatPaiements = EtatServeur.ModePaiements(c, simulationPaiement, modeDemo, app.Environment.IsDevelopment());
     var webhookSaspay = string.IsNullOrWhiteSpace(c["Saspay:SecretWebhook"]) ? ", webhook non vérifiable (Saspay__SecretWebhook absent)" : "";
     app.Logger.LogWarning("Paiements : {Etat}{Webhook}", etatPaiements, cleSaspay.Length > 0 ? webhookSaspay : "");
 
@@ -284,6 +287,7 @@ app.MapControllers();
                 using var client = app.Services.GetRequiredService<IHttpClientFactory>().CreateClient();
                 client.Timeout = TimeSpan.FromSeconds(10);
                 var ip = (await client.GetStringAsync("https://api.ipify.org")).Trim();
+                app.Services.GetRequiredService<EtatServeur>().IpSortante = ip;
                 app.Logger.LogWarning("IP sortante de l'API : {Ip} (à déclarer dans SasPay → Développeur → IP Whitelist pour les reversements)", ip);
             }
             catch (Exception ex)

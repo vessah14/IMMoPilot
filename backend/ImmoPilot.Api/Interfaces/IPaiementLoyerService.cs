@@ -19,4 +19,7 @@ public interface IPaiementLoyerService
 
     // Tâche de fond : demandes restées en attente et reversements aux propriétaires à (re)faire
     Task TacheDeFondAsync();
+
+    // Super admin : renvoie tout de suite un reversement bloqué ou abandonné (false si rien à relancer)
+    Task<bool> RelancerReversementAsync(int paiementId);
 }
