@@ -333,7 +333,8 @@ public class PaiementLoyerService(
         }
     }
 
-    private static string NouvelleCle(Paiement p) => $"REV-{p.Id}-{Guid.NewGuid():N}"[..40];
+    // Nouvelle clé d'idempotence pour un nouvel essai (au plus ~45 caractères : la colonne en accepte 100)
+    private static string NouvelleCle(Paiement p) => $"REV-{p.Id}-{Guid.NewGuid():N}";
 
     private static string? Tronquer(string? texte) => texte is { Length: > 300 } ? texte[..300] : texte;
 
