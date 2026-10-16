@@ -84,7 +84,7 @@ const sections: SectionLegale[] = [
       <>
         <p>
           Les prix sont indiqués en francs CFA (FCFA). L&apos;abonnement se paie d&apos;avance, pour 1, 3 ou 12 mois, par
-          Orange Money ou MTN Mobile Money via notre prestataire de paiement <strong>CamPay</strong>. Le paiement de 12 mois
+          Orange Money ou MTN Mobile Money via notre prestataire de paiement <strong>SasPay</strong>. Le paiement de 12 mois
           bénéficie d&apos;une réduction indiquée au moment du paiement.
         </p>
         <p>

@@ -149,7 +149,7 @@ export default async function Abonnements() {
         <div className="rounded-xl bg-white shadow-sm border border-gray-100">
           <div className="px-5 pt-5 pb-3">
             <h2 className="font-semibold text-gray-900">Derniers paiements</h2>
-            <p className="text-sm text-gray-500">Orange Money / MTN MoMo via CamPay, et prolongations manuelles</p>
+            <p className="text-sm text-gray-500">Orange Money / MTN MoMo via SasPay, et prolongations manuelles</p>
           </div>
           {paiements.length === 0 ? (
             <p className="px-5 pb-6 text-sm text-gray-500">Aucun paiement d&apos;abonnement pour l&apos;instant.</p>

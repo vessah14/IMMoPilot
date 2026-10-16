@@ -18,6 +18,7 @@ public record PaiementAbonnementDto(
     StatutPaiementAbonnement Statut,
     string? Operateur,
     string? CodeUssd, // code à composer si la demande n'apparaît pas (renvoyé à la création uniquement)
+    string? UrlPaiement, // page de paiement SasPay vers laquelle rediriger (renvoyée à la création uniquement)
     string? NumeroFacture,
     bool Manuel,
     DateTime DateCreation,

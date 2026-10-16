@@ -59,7 +59,7 @@ export default async function VueEnsemblePlateforme() {
       <div className="rounded-xl bg-white shadow-sm border border-gray-100">
         <div className="px-5 py-4 border-b border-gray-100">
           <h2 className="font-semibold">Abonnements encaissés</h2>
-          <p className="text-sm text-gray-500">Paiements d&apos;abonnement reçus chaque mois (CamPay et manuels)</p>
+          <p className="text-sm text-gray-500">Paiements d&apos;abonnement reçus chaque mois (SasPay et manuels)</p>
         </div>
         <div className="p-5">
           <GraphiqueRevenus donnees={s.encaissements12Mois.map((m) => ({ mois: moisCourt(m.mois), montant: m.montant }))} />

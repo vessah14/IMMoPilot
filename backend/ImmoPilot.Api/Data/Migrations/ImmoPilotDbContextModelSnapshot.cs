@@ -341,16 +341,16 @@ namespace ImmoPilot.Api.Data.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
-                    b.Property<string>("ReferenceCampay")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<string>("ReferenceExterne")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
                     b.Property<string>("ReferenceOperateur")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ReferencePaiement")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
@@ -372,10 +372,10 @@ namespace ImmoPilot.Api.Data.Migrations
                     b.HasIndex("NumeroFacture")
                         .IsUnique();
 
-                    b.HasIndex("ReferenceCampay");
-
                     b.HasIndex("ReferenceExterne")
                         .IsUnique();
+
+                    b.HasIndex("ReferencePaiement");
 
                     b.HasIndex("UtilisateurId");
 

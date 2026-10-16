@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Check, CircleAlert, CircleCheck, Clock, Loader2, Smartphone, CircleX, Receipt, PartyPopper, ArrowRight } from "lucide-react";
+import { Check, CircleAlert, CircleCheck, Clock, Loader2, Smartphone, CircleX, Receipt, PartyPopper, ArrowRight, ExternalLink } from "lucide-react";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { Badge } from "@/components/dashboard/Filtres";
@@ -32,11 +32,13 @@ export default function OngletAbonnement({
   moi,
   formuleInitiale,
   bienvenue = false,
+  paiementRetour,
 }: {
   abonnement: Abonnement;
   moi: Utilisateur;
   formuleInitiale?: Formule; // formule présélectionnée (lien « Passer à Pro », inscription)
   bienvenue?: boolean; // on arrive juste après l'inscription
+  paiementRetour?: number; // retour depuis la page de paiement SasPay : paiement à suivre
 }) {
   const router = useRouter();
   const [formule, setFormule] = useState<Formule>(formuleInitiale ?? (a.formule === "Starter" ? "Pro" : a.formule));
@@ -52,7 +54,30 @@ export default function OngletAbonnement({
   const [envoi, setEnvoi] = useState(false);
   const [enCours, setEnCours] = useState<PaiementAbonnement | null>(null); // paiement en attente de validation
   const [resultat, setResultat] = useState<PaiementAbonnement | null>(null);
+  const [redirection, setRedirection] = useState(false); // départ vers la page de paiement SasPay
   const minuterie = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Retour depuis la page de paiement SasPay : on reprend le suivi de ce paiement
+  useEffect(() => {
+    if (!paiementRetour) return;
+    let actif = true;
+    apiClient<PaiementAbonnement>(`/abonnement/paiements/${paiementRetour}`)
+      .then((p) => {
+        if (!actif) return;
+        if (p.statut === "EnAttente") setEnCours(p);
+        else {
+          setResultat(p);
+          router.refresh();
+        }
+        blocPaiement.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      })
+      .catch(() => {
+        // paiement introuvable : on affiche simplement le formulaire
+      });
+    return () => {
+      actif = false;
+    };
+  }, [paiementRetour, router]);
 
   const offre = a.offres.find((o) => o.formule === formule) ?? a.offres[0];
   const tarif = offre.tarifs.find((t) => t.dureeMois === duree) ?? offre.tarifs[0];
@@ -92,6 +117,12 @@ export default function OngletAbonnement({
         methode: "POST",
         corps: { formule, dureeMois: duree, telephone },
       });
+      // Orange Money (et parfois MTN) : le paiement se fait sur la page SasPay, puis retour automatique ici
+      if (p.urlPaiement) {
+        setRedirection(true);
+        window.location.assign(p.urlPaiement);
+        return;
+      }
       setEnCours(p);
     } catch (err) {
       setErreur(err instanceof ErreurApi ? err.message : "Une erreur est survenue.");
@@ -170,7 +201,7 @@ export default function OngletAbonnement({
           <h2 className="text-lg font-semibold text-gray-900">
             {a.formule === "Starter" ? "Passer à une formule supérieure" : "Payer / renouveler mon abonnement"}
           </h2>
-          <p className="mt-1 text-sm text-gray-500">Paiement sécurisé par Orange Money ou MTN Mobile Money.</p>
+          <p className="mt-1 text-sm text-gray-500">Paiement sécurisé par Orange Money ou MTN Mobile Money, via SasPay.</p>
         </div>
 
         {a.modeSimulation && (
@@ -188,6 +219,20 @@ export default function OngletAbonnement({
           <p className="px-6 py-6 text-sm text-gray-600">
             Le paiement en ligne n&apos;est pas encore disponible. Contactez le support depuis l&apos;onglet « Support » pour renouveler votre abonnement.
           </p>
+        ) : redirection ? (
+          /* Départ vers la page de paiement SasPay */
+          <div className="flex flex-col items-center gap-4 px-6 py-10 text-center" role="status" aria-live="polite">
+            <span className="flex size-16 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+              <ExternalLink className="size-8" />
+            </span>
+            <div>
+              <p className="text-lg font-semibold text-gray-900">Ouverture de la page de paiement sécurisée…</p>
+              <p className="mt-1 text-gray-600">
+                Validez le paiement sur la page SasPay : vous reviendrez ici automatiquement une fois le paiement terminé.
+              </p>
+            </div>
+            <Loader2 className="size-6 animate-spin text-blue-600" />
+          </div>
         ) : enCours ? (
           /* Attente de validation sur le téléphone */
           <div className="flex flex-col items-center gap-4 px-6 py-10 text-center" role="status" aria-live="polite">
@@ -307,7 +352,7 @@ export default function OngletAbonnement({
 
             <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
               <p className="text-xs text-gray-500">
-                Vous recevrez une demande de paiement sur votre téléphone. Aucun prélèvement automatique.
+                Vous validerez le paiement sur votre téléphone ou sur la page sécurisée SasPay. Aucun prélèvement automatique.
               </p>
               <Button type="submit" icon={Check} disabled={envoi} className="shrink-0">
                 {envoi ? "Envoi de la demande…" : `Payer ${fcfa(tarif.montant)}`}

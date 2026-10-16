@@ -8,10 +8,10 @@ public interface IAbonnementService
     // ---- Bailleur connecté ----
     Task<AbonnementDto> MonAbonnementAsync();
     Task<PaiementAbonnementDto> PayerAsync(PaiementAbonnementRequeteDto requete);
-    Task<PaiementAbonnementDto?> VerifierAsync(int id); // interroge CamPay si le paiement est encore en attente
+    Task<PaiementAbonnementDto?> VerifierAsync(int id); // interroge SasPay si le paiement est encore en attente
 
-    // ---- Webhook CamPay ---- (false si la signature est invalide)
-    Task<bool> TraiterNotificationAsync(string? reference, string? referenceExterne, string? signature);
+    // ---- Webhook SasPay ---- (false si la signature est invalide) : corps brut et en-têtes X-Webhook-*
+    Task<bool> TraiterNotificationAsync(string corps, string? signature, string? horodatage);
 
     // ---- Super admin ----
     Task<IReadOnlyList<PaiementAbonnementAdminDto>> TousAsync();

@@ -79,7 +79,7 @@ const sections: SectionLegale[] = [
           sont transmises uniquement aux prestataires nécessaires au service :
         </p>
         <ul>
-          <li><strong>CamPay</strong>, ainsi qu&apos;Orange et MTN, pour le traitement des paiements Mobile Money ;</li>
+          <li><strong>SasPay</strong>, ainsi qu&apos;Orange et MTN, pour le traitement des paiements Mobile Money ;</li>
           <li><strong>Cloudinary</strong>, pour l&apos;hébergement des photos d&apos;immeubles ;</li>
           <li>notre hébergeur, pour le stockage sécurisé de la base de données.</li>
         </ul>
@@ -111,7 +111,7 @@ const sections: SectionLegale[] = [
         <li>session protégée par un cookie sécurisé, inaccessible aux scripts de la page ;</li>
         <li>chaque bailleur n&apos;accède qu&apos;à ses propres données ;</li>
         <li>limitation des tentatives de connexion pour bloquer les attaques par essais successifs ;</li>
-        <li>paiements vérifiés directement auprès de CamPay avant d&apos;activer un abonnement.</li>
+        <li>paiements vérifiés directement auprès de SasPay avant d&apos;activer un abonnement.</li>
       </ul>
     ),
   },

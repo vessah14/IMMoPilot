@@ -34,9 +34,10 @@ type Props = {
   ongletInitial?: string;
   formuleInitiale?: Formule; // formule présélectionnée dans l'onglet Abonnement
   bienvenue?: boolean; // arrivée juste après l'inscription
+  paiementRetour?: number; // retour depuis la page de paiement SasPay
 };
 
-export default function ParametresCompte({ moi, tickets, abonnement, ongletInitial, formuleInitiale, bienvenue }: Props) {
+export default function ParametresCompte({ moi, tickets, abonnement, ongletInitial, formuleInitiale, bienvenue, paiementRetour }: Props) {
   const [onglet, setOnglet] = useState<IdOnglet>(onglets.some((o) => o.id === ongletInitial) ? (ongletInitial as IdOnglet) : "profil");
 
   // Le profil et l'agence sont enregistrés ensemble par l'API : on complète avec les valeurs actuelles
@@ -192,7 +193,7 @@ export default function ParametresCompte({ moi, tickets, abonnement, ongletIniti
           </SectionParametres>
         )}
 
-        {onglet === "abonnement" && <OngletAbonnement abonnement={abonnement} moi={moi} formuleInitiale={formuleInitiale} bienvenue={bienvenue} />}
+        {onglet === "abonnement" && <OngletAbonnement abonnement={abonnement} moi={moi} formuleInitiale={formuleInitiale} bienvenue={bienvenue} paiementRetour={paiementRetour} />}
 
         {onglet === "support" && (
           <>

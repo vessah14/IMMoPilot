@@ -23,30 +23,30 @@ public class AbonnementController(IAbonnementService service) : ControllerBase
     public async Task<ActionResult<PaiementAbonnementDto>> Payer(PaiementAbonnementRequeteDto requete) =>
         StatusCode(StatusCodes.Status201Created, await service.PayerAsync(requete));
 
-    // GET /api/abonnement/paiements/5 → statut à jour (interroge CamPay si le paiement est en attente)
+    // GET /api/abonnement/paiements/5 → statut à jour (interroge SasPay si le paiement est en attente)
     [HttpGet("paiements/{id:int}")]
     public async Task<ActionResult<PaiementAbonnementDto>> Verifier(int id) =>
         await service.VerifierAsync(id) is { } paiement ? Ok(paiement) : NotFound();
 }
 
-// Notifications envoyées par CamPay quand un paiement change de statut.
-// Adresse à indiquer dans l'application CamPay : https://<votre-domaine>/api/campay/webhook
+// Notifications envoyées par SasPay quand un paiement change de statut.
+// À créer dans le tableau de bord SasPay → Webhooks : https://<adresse-de-l-api>/api/saspay/webhook,
+// abonné aux events transaction.success, transaction.failed et transaction.cancelled
 [ApiController]
 [AllowAnonymous]
-[Route("api/campay/webhook")]
-public class CampayWebhookController(IAbonnementService service) : ControllerBase
+[Route("api/saspay/webhook")]
+public class SaspayWebhookController(IAbonnementService service) : ControllerBase
 {
-    // CamPay envoie les informations dans l'URL (GET) ; on accepte aussi un formulaire POST
-    [HttpGet]
     [HttpPost]
+    [RequestSizeLimit(64 * 1024)]
     public async Task<IActionResult> Recevoir()
     {
-        string? Lire(string cle) =>
-            Request.Query.TryGetValue(cle, out var q) && !string.IsNullOrEmpty(q) ? q.ToString()
-            : Request.HasFormContentType && Request.Form.TryGetValue(cle, out var f) ? f.ToString()
-            : null;
+        // La signature porte sur le corps brut exact : on le lit tel quel, sans le désérialiser d'abord
+        using var lecteur = new StreamReader(Request.Body);
+        var corps = await lecteur.ReadToEndAsync();
 
-        var valide = await service.TraiterNotificationAsync(Lire("reference"), Lire("external_reference"), Lire("signature"));
+        var valide = await service.TraiterNotificationAsync(corps,
+            Request.Headers["X-Webhook-Signature"].FirstOrDefault(), Request.Headers["X-Webhook-Timestamp"].FirstOrDefault());
         return valide ? Ok() : Unauthorized();
     }
 }

@@ -174,6 +174,7 @@ export type PaiementAbonnement = {
   statut: StatutPaiementAbonnement;
   operateur: string | null;
   codeUssd: string | null;
+  urlPaiement: string | null; // page de paiement SasPay vers laquelle rediriger (à la création uniquement)
   numeroFacture: string | null;
   manuel: boolean;
   dateCreation: string;

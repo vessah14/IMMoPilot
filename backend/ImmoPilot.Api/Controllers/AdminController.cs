@@ -98,7 +98,7 @@ public class AdminController(
 
     // ---- Abonnements ----
 
-    // GET /api/admin/paiements-abonnement → derniers paiements d'abonnement (CamPay et manuels)
+    // GET /api/admin/paiements-abonnement → derniers paiements d'abonnement (SasPay et manuels)
     [HttpGet("paiements-abonnement")]
     public async Task<ActionResult<IReadOnlyList<PaiementAbonnementAdminDto>>> PaiementsAbonnement() =>
         Ok(await abonnements.TousAsync());

@@ -11,10 +11,10 @@ namespace ImmoPilot.Api.Services;
 
 // Le locataire paie son loyer depuis son lien personnel.
 // Pour l'instant, l'encaissement passe TOUJOURS par le simulateur (aucun argent réel) :
-// il restera à choisir sur quel compte l'argent des loyers doit arriver avant de brancher le vrai CamPay.
+// il restera à choisir comment l'argent des loyers est reversé aux propriétaires avant de brancher SasPay.
 public class PaiementLoyerService(
     ImmoPilotDbContext db,
-    SimulateurCampay operateur,
+    SimulateurPaiement operateur,
     INotificationService notifications,
     IFileEmails fileEmails,
     ModelesEmail modeles,
@@ -69,8 +69,8 @@ public class PaiementLoyerService(
         var du = (await MoisDusAsync(l)).FirstOrDefault(m => m.Mois == mois)
                  ?? throw new RegleMetierException("Ce mois n'a rien à payer (déjà réglé ou hors de votre bail).");
 
-        var demande = await operateur.DemanderPaiementAsync(du.Reste, telephone,
-            $"Loyer {Dates.NomMois(mois)} - {l.NomComplet}", $"LOYER-{l.Id}-{mois:yyyyMM}");
+        var demande = await operateur.DemanderPaiementAsync(du.Reste, new ClientPaiement(l.NomComplet, l.Email, telephone),
+            $"Loyer {Dates.NomMois(mois)} - {l.NomComplet}", $"LOYER-{l.Id}-{mois:yyyyMM}", urlRetour: null);
 
         var paiement = new Paiement
         {
@@ -78,7 +78,7 @@ public class PaiementLoyerService(
             Montant = du.Reste,
             DatePaiement = Dates.Aujourdhui(horloge),
             Periode = mois,
-            Moyen = demande.Operateur == "MTN" ? MoyenPaiement.MtnMomo : MoyenPaiement.OrangeMoney,
+            Moyen = demande.Operateur == Operateurs.Mtn ? MoyenPaiement.MtnMomo : MoyenPaiement.OrangeMoney,
             Reference = demande.Reference,
             Statut = StatutPaiement.EnAttente,
             EnLigne = true,
@@ -100,10 +100,10 @@ public class PaiementLoyerService(
         if (p.EnLigne && p.Statut == StatutPaiement.EnAttente && p.Reference is not null)
         {
             var statut = await operateur.StatutAsync(p.Reference);
-            var nouveau = statut.Statut switch
+            var nouveau = statut.Etat switch
             {
-                "SUCCESSFUL" => StatutPaiement.Confirme,
-                "FAILED" => StatutPaiement.Echoue,
+                EtatPaiementMobile.Reussi => StatutPaiement.Confirme,
+                EtatPaiementMobile.Echoue => StatutPaiement.Echoue,
                 _ when horloge.GetUtcNow().UtcDateTime - p.DateDemande > AttenteMax => StatutPaiement.Echoue,
                 _ => StatutPaiement.EnAttente,
             };

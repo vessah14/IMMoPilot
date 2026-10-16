@@ -3,6 +3,7 @@ using ImmoPilot.Api.Dtos;
 using ImmoPilot.Api.Exceptions;
 using ImmoPilot.Api.Interfaces;
 using ImmoPilot.Api.Models;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 
 namespace ImmoPilot.Api.Services;
@@ -10,12 +11,13 @@ namespace ImmoPilot.Api.Services;
 public class AbonnementService(
     ImmoPilotDbContext db,
     IUtilisateurCourant moi,
-    ICampayService campay,
+    IPaiementMobile paiements,
     IParametresService parametres,
     INotificationService notifications,
     IFileEmails fileEmails,
     ModelesEmail modeles,
     TimeProvider horloge,
+    IConfiguration configuration,
     ILogger<AbonnementService> journal) : IAbonnementService
 {
     private DateTime Maintenant => horloge.GetUtcNow().UtcDateTime;
@@ -37,10 +39,10 @@ public class AbonnementService(
             Abonnements.Etat(u.Formule, u.FinAbonnement, aDejaPaye, Maintenant),
             u.FinAbonnement,
             u.FinAbonnement is null ? null : (int)Math.Ceiling((u.FinAbonnement.Value - Maintenant).TotalDays),
-            campay.EstConfigure,
-            campay.EstSimulation,
+            paiements.EstConfigure,
+            paiements.EstSimulation,
             Abonnements.Offres(await parametres.ObtenirAsync()),
-            historique.Select(p => VersDto(p, codeUssd: null)).ToList());
+            historique.Select(p => VersDto(p)).ToList());
     }
 
     public async Task<PaiementAbonnementDto> PayerAsync(PaiementAbonnementRequeteDto r)
@@ -58,6 +60,8 @@ public class AbonnementService(
             throw new RegleMetierException("Un paiement est déjà en attente de validation sur votre téléphone. Patientez quelques minutes.");
 
         var p = await parametres.ObtenirAsync();
+        var bailleur = await db.Utilisateurs.AsNoTracking().Where(u => u.Id == moi.Id)
+            .Select(u => new { u.NomComplet, u.Email }).FirstAsync();
         var paiement = new PaiementAbonnement
         {
             UtilisateurId = moi.Id,
@@ -73,12 +77,15 @@ public class AbonnementService(
 
         try
         {
-            var demande = await campay.DemanderPaiementAsync(paiement.Montant, telephone,
-                $"{p.NomPlateforme} - formule {formule}, {r.DureeMois} mois", paiement.ReferenceExterne);
-            paiement.ReferenceCampay = demande.Reference;
+            // Après un paiement sur la page SasPay, retour sur l'onglet Abonnement, qui suit ce paiement
+            var retour = $"{AdressesSites.Site(configuration).TrimEnd('/')}/admin/parametres?onglet=abonnement&paiement={paiement.Id}";
+            var demande = await paiements.DemanderPaiementAsync(paiement.Montant,
+                new ClientPaiement(bailleur.NomComplet, bailleur.Email, telephone),
+                $"{p.NomPlateforme} - formule {formule}, {r.DureeMois} mois", paiement.ReferenceExterne, retour);
+            paiement.ReferencePaiement = demande.Reference;
             paiement.Operateur = demande.Operateur;
             await db.SaveChangesAsync();
-            return VersDto(paiement, demande.CodeUssd);
+            return VersDto(paiement, demande.CodeUssd, demande.UrlPaiement);
         }
         catch
         {
@@ -93,23 +100,37 @@ public class AbonnementService(
         var paiement = await db.PaiementsAbonnement.FirstOrDefaultAsync(p => p.Id == id && p.UtilisateurId == moi.Id);
         if (paiement is null) return null;
         if (paiement.Statut == StatutPaiementAbonnement.EnAttente) await ActualiserAsync(paiement);
-        return VersDto(await db.PaiementsAbonnement.AsNoTracking().FirstAsync(p => p.Id == id), codeUssd: null);
+        return VersDto(await db.PaiementsAbonnement.AsNoTracking().FirstAsync(p => p.Id == id));
     }
 
-    // ================= Webhook CamPay =================
+    // ================= Webhook SasPay =================
 
-    public async Task<bool> TraiterNotificationAsync(string? reference, string? referenceExterne, string? signature)
+    public async Task<bool> TraiterNotificationAsync(string corps, string? signature, string? horodatage)
     {
-        if (!await campay.SignatureValideAsync(signature))
+        if (!paiements.SignatureWebhookValide(corps, signature, horodatage))
         {
-            journal.LogWarning("Notification CamPay rejetée : signature invalide (référence {Reference})", reference);
+            journal.LogWarning("Notification SasPay rejetée : signature ou horodatage invalide");
             return false;
         }
 
-        var paiement = await db.PaiementsAbonnement.FirstOrDefaultAsync(p =>
-            (reference != null && p.ReferenceCampay == reference) || (referenceExterne != null && p.ReferenceExterne == referenceExterne));
+        // { "event": "transaction.success", "data": { "id": "…", … } } : seul l'identifiant du paiement nous intéresse
+        string? reference = null;
+        try
+        {
+            using var json = JsonDocument.Parse(corps);
+            if (json.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Object
+                && data.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String)
+                reference = id.GetString();
+        }
+        catch (JsonException)
+        {
+            journal.LogWarning("Notification SasPay illisible");
+        }
+        if (reference is null) return true; // event sans paiement (ex : webhook.test) : rien à faire
 
-        // On ne se fie pas au contenu de la notification : le statut est redemandé à CamPay
+        var paiement = await db.PaiementsAbonnement.FirstOrDefaultAsync(p => p.ReferencePaiement == reference);
+
+        // On ne se fie pas au contenu de la notification : le statut est redemandé à SasPay
         if (paiement is { Statut: StatutPaiementAbonnement.EnAttente }) await ActualiserAsync(paiement);
         return true;
     }
@@ -155,7 +176,7 @@ public class AbonnementService(
     {
         // 1. Paiements restés en attente (client qui a fermé la page, webhook non reçu) : on redemande le statut
         var enAttente = await db.PaiementsAbonnement
-            .Where(p => p.Statut == StatutPaiementAbonnement.EnAttente && p.ReferenceCampay != null && p.DateCreation < Maintenant.AddMinutes(-1))
+            .Where(p => p.Statut == StatutPaiementAbonnement.EnAttente && p.ReferencePaiement != null && p.DateCreation < Maintenant.AddMinutes(-1))
             .OrderBy(p => p.DateCreation)
             .Take(50)
             .ToListAsync();
@@ -204,13 +225,13 @@ public class AbonnementService(
 
     // ================= Interne =================
 
-    // Redemande le statut à CamPay et met le paiement à jour
+    // Redemande le statut à SasPay et met le paiement à jour
     private async Task ActualiserAsync(PaiementAbonnement paiement)
     {
-        if (paiement.ReferenceCampay is null) return;
-        var statut = await campay.StatutAsync(paiement.ReferenceCampay);
-        if (statut.Statut == "SUCCESSFUL") await ConfirmerAsync(paiement, statut.Operateur, statut.ReferenceOperateur);
-        else if (statut.Statut == "FAILED") await MarquerEchoueAsync(paiement, notifier: true);
+        if (paiement.ReferencePaiement is null) return;
+        var statut = await paiements.StatutAsync(paiement.ReferencePaiement);
+        if (statut.Etat == EtatPaiementMobile.Reussi) await ConfirmerAsync(paiement, statut.Operateur, statut.ReferenceOperateur);
+        else if (statut.Etat == EtatPaiementMobile.Echoue) await MarquerEchoueAsync(paiement, notifier: true);
     }
 
     private async Task ConfirmerAsync(PaiementAbonnement paiement, string? operateur, string? referenceOperateur)
@@ -260,7 +281,7 @@ public class AbonnementService(
         }
     }
 
-    private static PaiementAbonnementDto VersDto(PaiementAbonnement p, string? codeUssd) =>
-        new(p.Id, p.Formule, p.DureeMois, p.Montant, p.Telephone, p.Statut, p.Operateur, codeUssd, p.NumeroFacture, p.Manuel,
+    private static PaiementAbonnementDto VersDto(PaiementAbonnement p, string? codeUssd = null, string? urlPaiement = null) =>
+        new(p.Id, p.Formule, p.DureeMois, p.Montant, p.Telephone, p.Statut, p.Operateur, codeUssd, urlPaiement, p.NumeroFacture, p.Manuel,
             p.DateCreation, p.DateConfirmation);
 }

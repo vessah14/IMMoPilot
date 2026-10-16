@@ -14,7 +14,7 @@ et paiement des loyers par **Orange Money / MTN MoMo**.
 - Locataires : baux, attribution et changement de logement, historique des paiements
 - Suivi des loyers mois par mois (payé, partiel, en retard) et relances par e-mail ou WhatsApp en un clic
 - Tableau de bord, rapports sur 12 mois et exports CSV
-- Abonnements Starter / Pro / Enterprise avec limites, essai gratuit et paiement Mobile Money (CamPay)
+- Abonnements Starter / Pro / Enterprise avec limites, essai gratuit et paiement Mobile Money (SasPay)
 
 **Espace locataire (sans compte)**
 - Lien personnel et secret pour payer son loyer depuis son téléphone
@@ -37,12 +37,12 @@ de la plateforme (prix, essai, maintenance).
 | `frontend/` (site + espace bailleur + page locataire) | Next.js 16 (App Router, React 19), TypeScript, Tailwind CSS 4 |
 | `superadmin/` (console d'administration) | Next.js 16, TypeScript, Tailwind CSS 4 |
 | `backend/` (API) | ASP.NET Core 10, Entity Framework Core, PostgreSQL, JWT en cookie httpOnly |
-| Services | CamPay (Mobile Money), Brevo (e-mails SMTP), Cloudinary (photos) |
+| Services | SasPay (Mobile Money), Brevo (e-mails SMTP), Cloudinary (photos) |
 
 ```
 Navigateur ──► frontend (Next.js)  ──/api/* (proxy)──►  API ASP.NET  ──►  PostgreSQL
 Navigateur ──► superadmin (Next.js) ──/api/* (proxy)──►      │
-                                                             ├──► CamPay / simulateur (paiements)
+                                                             ├──► SasPay / simulateur (paiements)
                                                              ├──► Brevo (e-mails, en arrière-plan)
                                                              └──► Cloudinary (photos)
 ```
@@ -105,7 +105,9 @@ Quatre conteneurs : `db` (PostgreSQL 17), `api` (`backend/Dockerfile`), `fronten
 | `Frontend__Url` | adresse du site (liens des e-mails) |
 | `Base__MigrerAuDemarrage` | `true` (crée / met à jour les tables au démarrage) |
 | `ForwardedHeaders__FaireConfianceAuxProxys` | `true` (HTTPS et IP des visiteurs derrière le proxy de l'hébergeur) |
-| `Demo__Actif` | `true` (paiements simulés, aucun argent réel) |
+| `Demo__Actif` | `true` (paiements simulés, aucun argent réel) ; à retirer pour encaisser avec SasPay |
+| `Saspay__CleApi` | clé secrète SasPay (tableau de bord → Développeur) : `sk_test_…` pour tester, `sk_live_…` pour l'argent réel |
+| `Saspay__SecretWebhook` | secret de signature du webhook SasPay (affiché une seule fois à sa création) |
 | `SuperAdmin__Email`, `SuperAdmin__MotDePasse` | compte super admin (mot de passe de 12 caractères minimum) |
 | `SuperAdmin__Reinitialiser` | `true` le temps d'un redémarrage pour remplacer l'e-mail et le mot de passe du super admin existant (puis retirer) |
 | `SuperAdmin__FrontendUrl` | adresse du super admin (lien « mot de passe oublié ») |

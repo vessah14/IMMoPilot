@@ -4,12 +4,13 @@ import type { Abonnement, Formule, Ticket } from "@/lib/types";
 
 // ?onglet=abonnement ouvre directement l'onglet demandé (lien du bandeau de renouvellement)
 // ?formule=Pro présélectionne la formule à payer ; ?bienvenue=1 : on arrive juste après l'inscription
+// ?paiement=5 : retour depuis la page de paiement SasPay, on suit ce paiement jusqu'à sa confirmation
 export default async function Parametres({
   searchParams,
 }: {
-  searchParams: Promise<{ onglet?: string; formule?: string; bienvenue?: string }>;
+  searchParams: Promise<{ onglet?: string; formule?: string; bienvenue?: string; paiement?: string }>;
 }) {
-  const { onglet, formule, bienvenue } = await searchParams;
+  const { onglet, formule, bienvenue, paiement } = await searchParams;
   const [moi, tickets, abonnement] = await Promise.all([
     utilisateurConnecte(),
     apiServeur<Ticket[]>("/support"),
@@ -30,6 +31,7 @@ export default async function Parametres({
         ongletInitial={onglet}
         formuleInitiale={abonnement.offres.find((o) => o.formule === formule)?.formule as Formule | undefined}
         bienvenue={bienvenue === "1"}
+        paiementRetour={/^\d+$/.test(paiement ?? "") ? Number(paiement) : undefined}
       />
     </section>
   );

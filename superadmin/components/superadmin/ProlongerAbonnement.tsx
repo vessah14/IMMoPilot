@@ -46,7 +46,7 @@ export default function ProlongerAbonnement({
   return (
     <form ref={formulaire} onSubmit={prolonger} className="rounded-xl bg-white shadow-sm border border-gray-100 p-5">
       <h2 className="font-semibold text-gray-900">Prolonger un abonnement manuellement</h2>
-      <p className="text-sm text-gray-500">Pour un paiement reçu hors CamPay (espèces, virement) ou un geste commercial.</p>
+      <p className="text-sm text-gray-500">Pour un paiement reçu hors SasPay (espèces, virement) ou un geste commercial.</p>
       <div className="mt-4 grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-3 md:items-end">
         <div className="space-y-2">
           <label htmlFor="client" className="block text-sm font-medium text-gray-700">

@@ -42,17 +42,17 @@ builder.Services.AddScoped<IRapportService, RapportService>();
 builder.Services.AddScoped<ISupportService, SupportService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddHttpClient<IStockagePhotos, CloudinaryService>();
-// Paiements : vrai CamPay, ou simulateur (sans argent réel) :
-// - en développement si Campay:Simulation = true ;
+// Paiements : SasPay (clé Saspay:CleApi), ou simulateur (sans argent réel) :
+// - en développement si Paiement:Simulation = true ;
 // - en ligne si Demo:Actif = true (site de démonstration / portfolio : aucun argent réel ne circule).
 // Les loyers payés par les locataires passent toujours par le simulateur (compte d'encaissement pas encore choisi).
-builder.Services.AddSingleton<SimulateurCampay>();
+builder.Services.AddSingleton<SimulateurPaiement>();
 builder.Services.AddScoped<IPaiementLoyerService, PaiementLoyerService>();
 var modeDemo = builder.Configuration.GetValue<bool>("Demo:Actif");
-if (modeDemo || (builder.Environment.IsDevelopment() && builder.Configuration.GetValue<bool>("Campay:Simulation")))
-    builder.Services.AddSingleton<ICampayService>(sp => sp.GetRequiredService<SimulateurCampay>());
+if (modeDemo || (builder.Environment.IsDevelopment() && builder.Configuration.GetValue<bool>("Paiement:Simulation")))
+    builder.Services.AddSingleton<IPaiementMobile>(sp => sp.GetRequiredService<SimulateurPaiement>());
 else
-    builder.Services.AddHttpClient<ICampayService, CampayService>(c => c.Timeout = TimeSpan.FromSeconds(30));
+    builder.Services.AddHttpClient<IPaiementMobile, SaspayService>(c => c.Timeout = TimeSpan.FromSeconds(30));
 builder.Services.AddScoped<IAbonnementService, AbonnementService>();
 builder.Services.AddHttpClient("brevo");
 builder.Services.AddSingleton<IEnvoiEmail, EmailService>();
@@ -199,7 +199,7 @@ app.Use(async (contexte, suite) =>
 {
     var chemin = contexte.Request.Path;
     if (chemin.StartsWithSegments("/api") && !chemin.StartsWithSegments("/api/admin") && !chemin.StartsWithSegments("/api/offre")
-        && !chemin.StartsWithSegments("/api/campay"))
+        && !chemin.StartsWithSegments("/api/saspay"))
     {
         var parametres = await contexte.RequestServices.GetRequiredService<IParametresService>().ObtenirAsync();
         if (parametres.ModeMaintenance)
@@ -262,6 +262,16 @@ app.MapControllers();
     app.Logger.LogWarning("Liens des e-mails : {Site}", AdressesSites.Site(c));
     if (!app.Environment.IsDevelopment() && AdressesSites.PointeVersLocalhost(c))
         app.Logger.LogError("Les liens des e-mails pointent vers localhost : renseignez Frontend__Url (adresse publique du site).");
+
+    // Paiements des abonnements : simulateur, ou SasPay en test / production selon le préfixe de la clé
+    var cleSaspay = c["Saspay:CleApi"]?.Trim() ?? "";
+    var etatPaiements = modeDemo ? "simulateur (mode démo : aucun argent réel)"
+        : app.Environment.IsDevelopment() && c.GetValue<bool>("Paiement:Simulation") ? "simulateur (développement)"
+        : cleSaspay.StartsWith("sk_test_", StringComparison.Ordinal) ? "SasPay en TEST (clé sk_test_ : aucun argent réel)"
+        : cleSaspay.StartsWith("sk_live_", StringComparison.Ordinal) ? "SasPay en PRODUCTION (clé sk_live_ : argent réel)"
+        : "NON configurés (Saspay__CleApi absente) : le paiement en ligne des abonnements est désactivé";
+    var webhookSaspay = string.IsNullOrWhiteSpace(c["Saspay:SecretWebhook"]) ? ", webhook non vérifiable (Saspay__SecretWebhook absent)" : "";
+    app.Logger.LogWarning("Paiements : {Etat}{Webhook}", etatPaiements, cleSaspay.Length > 0 ? webhookSaspay : "");
 }
 
 await InitialisationBase.ExecuterAsync(app);

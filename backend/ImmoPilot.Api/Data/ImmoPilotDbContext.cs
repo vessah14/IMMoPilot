@@ -153,8 +153,8 @@ public class ImmoPilotDbContext(DbContextOptions<ImmoPilotDbContext> options) : 
             e.Property(p => p.Telephone).HasMaxLength(20);
             e.Property(p => p.ReferenceExterne).HasMaxLength(64);
             e.HasIndex(p => p.ReferenceExterne).IsUnique();
-            e.Property(p => p.ReferenceCampay).HasMaxLength(100);
-            e.HasIndex(p => p.ReferenceCampay);
+            e.Property(p => p.ReferencePaiement).HasMaxLength(100);
+            e.HasIndex(p => p.ReferencePaiement);
             e.Property(p => p.Operateur).HasMaxLength(30);
             e.Property(p => p.ReferenceOperateur).HasMaxLength(100);
             e.Property(p => p.NumeroFacture).HasMaxLength(30);

@@ -3,7 +3,7 @@ using ImmoPilot.Api.Interfaces;
 namespace ImmoPilot.Api.Services;
 
 // Tâche de fond : toutes les 2 minutes, vérifie les paiements d'abonnement restés en attente
-// (utile quand le webhook CamPay n'arrive pas, par exemple en local) et envoie les rappels avant échéance.
+// (utile quand le webhook SasPay n'arrive pas, par exemple en local) et envoie les rappels avant échéance.
 public class TacheAbonnements(IServiceScopeFactory scopes, ILogger<TacheAbonnements> journal) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken arret)

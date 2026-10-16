@@ -72,6 +72,25 @@ dotnet user-secrets set "Email:NomExpediteur" "IMMO PILOT"
 Sans configuration, les e-mails ne partent pas : en développement, leur contenu s'affiche dans la console de l'API.
 En production, indiquez l'adresse du site pour les liens : `Frontend:Url` (par défaut `http://localhost:3000`).
 
+## Paiements des abonnements (SasPay)
+
+Les bailleurs paient leur formule par Orange Money ou MTN MoMo via [SasPay](https://docs.saspay.me).
+Selon l'opérateur, la demande arrive sur le téléphone, ou SasPay renvoie une page de paiement vers laquelle
+le site redirige (Orange Money le plus souvent), puis ramène sur Paramètres → Abonnement.
+Un abonnement n'est prolongé qu'après vérification du paiement auprès de SasPay (`GET /payments/{id}/verify/`).
+
+```bash
+dotnet user-secrets set "Saspay:CleApi" "sk_test_…"          # clé de test : aucun argent réel
+dotnet user-secrets set "Saspay:SecretWebhook" "…"           # secret du webhook (tableau de bord SasPay → Webhooks)
+```
+
+Webhook à créer dans le tableau de bord SasPay : `https://<adresse-de-l-api>/api/saspay/webhook`, abonné à
+`transaction.success`, `transaction.failed` et `transaction.cancelled`. La signature (`X-Webhook-Signature`,
+HMAC-SHA256 de « horodatage.corps ») et l'horodatage (5 minutes au plus) sont vérifiés à chaque notification.
+
+En développement, `Paiement:Simulation = true` (appsettings.Development.json) remplace SasPay par un simulateur.
+Les loyers payés par les locataires passent encore toujours par le simulateur.
+
 ## Routes
 
 | Méthode | Route | Filtres |
