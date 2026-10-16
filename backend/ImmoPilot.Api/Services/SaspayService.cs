@@ -90,6 +90,9 @@ public class SaspayService(HttpClient http, IConfiguration configuration, TimePr
             "FAILED" or "CANCELLED" => EtatPaiementMobile.Echoue,
             _ => EtatPaiementMobile.EnAttente,
         };
+        // Réponse complète de SasPay en cas d'échec (aucun secret dedans) : le motif aide à diagnostiquer
+        if (etat == EtatPaiementMobile.Echoue)
+            journal.LogWarning("Paiement SasPay {Reference} échoué : {Corps}", reference, corps);
         return new StatutPaiementMobile(etat, null, Texte(d, "external_reference") ?? Texte(d, "reference"));
     }
 
