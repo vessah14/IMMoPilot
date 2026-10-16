@@ -49,7 +49,8 @@ builder.Services.AddHttpClient<IStockagePhotos, CloudinaryService>();
 builder.Services.AddSingleton<SimulateurPaiement>();
 builder.Services.AddScoped<IPaiementLoyerService, PaiementLoyerService>();
 var modeDemo = builder.Configuration.GetValue<bool>("Demo:Actif");
-if (modeDemo || (builder.Environment.IsDevelopment() && builder.Configuration.GetValue<bool>("Paiement:Simulation")))
+var simulationPaiement = modeDemo || (builder.Environment.IsDevelopment() && builder.Configuration.GetValue<bool>("Paiement:Simulation"));
+if (simulationPaiement)
     builder.Services.AddSingleton<IPaiementMobile>(sp => sp.GetRequiredService<SimulateurPaiement>());
 else
     builder.Services.AddHttpClient<IPaiementMobile, SaspayService>(c => c.Timeout = TimeSpan.FromSeconds(30));
@@ -272,6 +273,24 @@ app.MapControllers();
         : "NON configurés (Saspay__CleApi absente) : le paiement en ligne des abonnements est désactivé";
     var webhookSaspay = string.IsNullOrWhiteSpace(c["Saspay:SecretWebhook"]) ? ", webhook non vérifiable (Saspay__SecretWebhook absent)" : "";
     app.Logger.LogWarning("Paiements : {Etat}{Webhook}", etatPaiements, cleSaspay.Length > 0 ? webhookSaspay : "");
+
+    // Les reversements SasPay n'acceptent que les IP déclarées : on affiche celle par laquelle l'API sort aujourd'hui
+    // (sur Render gratuit, elle peut changer après un redémarrage). En arrière-plan, sans retarder le démarrage.
+    if (!simulationPaiement && cleSaspay.Length > 0)
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                using var client = app.Services.GetRequiredService<IHttpClientFactory>().CreateClient();
+                client.Timeout = TimeSpan.FromSeconds(10);
+                var ip = (await client.GetStringAsync("https://api.ipify.org")).Trim();
+                app.Logger.LogWarning("IP sortante de l'API : {Ip} (à déclarer dans SasPay → Développeur → IP Whitelist pour les reversements)", ip);
+            }
+            catch (Exception ex)
+            {
+                app.Logger.LogWarning("IP sortante de l'API inconnue ({Erreur})", ex.Message);
+            }
+        });
 }
 
 await InitialisationBase.ExecuterAsync(app);
