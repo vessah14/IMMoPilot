@@ -15,6 +15,19 @@ const statuts: Record<StatutPaiement, { label: string; icon: React.ComponentType
   Echoue: { label: "Échoué", icon: CircleX, style: "bg-red-100 text-red-700" },
 };
 
+// Loyer payé en ligne : où en est son reversement sur le compte du propriétaire
+function Reversement({ p }: { p: Paiement }) {
+  if (!p.reversement) return null;
+  const texte =
+    p.reversement === "Reverse"
+      ? `Reçu : ${fcfa(p.montantReverse ?? 0)} (frais déduits)`
+      : p.reversement === "Echoue"
+        ? "Reversement à régulariser (support)"
+        : "Reversement en cours…";
+  const style = p.reversement === "Reverse" ? "text-green-700" : p.reversement === "Echoue" ? "text-red-600" : "text-gray-500";
+  return <p className={`text-xs font-normal ${style}`}>{texte}</p>;
+}
+
 export default function ListePaiements({ paiements }: { paiements: Paiement[] }) {
   const router = useRouter();
   const [recherche, setRecherche] = useState("");
@@ -119,7 +132,10 @@ export default function ListePaiements({ paiements }: { paiements: Paiement[] })
                     <td className="px-5 py-3">
                       <Badge {...statuts[p.statut]} />
                     </td>
-                    <td className="px-5 py-3 whitespace-nowrap text-right font-medium">{fcfa(p.montant)}</td>
+                    <td className="px-5 py-3 whitespace-nowrap text-right font-medium">
+                      {fcfa(p.montant)}
+                      <Reversement p={p} />
+                    </td>
                     <td className="px-3 py-3 text-right">{boutonSupprimer(p)}</td>
                   </tr>
                 ))}
@@ -145,7 +161,10 @@ export default function ListePaiements({ paiements }: { paiements: Paiement[] })
                     {dateCourte(p.datePaiement)} · {libellesMoyen[p.moyen]}
                   </span>
                   <span className="flex items-center gap-2">
-                    <span className="font-semibold whitespace-nowrap">{fcfa(p.montant)}</span>
+                    <span className="text-right font-semibold whitespace-nowrap">
+                      {fcfa(p.montant)}
+                      <Reversement p={p} />
+                    </span>
                     {boutonSupprimer(p)}
                   </span>
                 </div>

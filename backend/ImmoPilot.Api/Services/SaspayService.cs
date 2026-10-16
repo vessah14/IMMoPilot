@@ -73,10 +73,74 @@ public class SaspayService(HttpClient http, IConfiguration configuration, TimePr
             string.IsNullOrWhiteSpace(url) ? null : url);
     }
 
-    public async Task<StatutPaiementMobile> StatutAsync(string reference)
+    public Task<StatutPaiementMobile> StatutAsync(string reference) =>
+        VerifierAsync($"/payments/{Uri.EscapeDataString(reference)}/verify/", "Paiement", reference);
+
+    public async Task<DemandeReversement> ReverserAsync(decimal montant, string telephone, string nomBeneficiaire,
+        string description, string cleIdempotence)
     {
-        // SasPay revérifie l'état réel auprès de l'opérateur avant de répondre
-        using var requete = Requete(HttpMethod.Get, $"/payments/{Uri.EscapeDataString(reference)}/verify/");
+        var (prenom, nom) = Separer(nomBeneficiaire);
+        string corps;
+        System.Net.HttpStatusCode code;
+        try
+        {
+            using var requete = Requete(HttpMethod.Post, "/payouts/initialize/");
+            requete.Headers.Add("Idempotency-Key", cleIdempotence);
+            requete.Content = JsonContent.Create(new Dictionary<string, object?>
+            {
+                ["amount"] = decimal.Floor(montant).ToString("0.00", CultureInfo.InvariantCulture),
+                ["currency"] = "XAF",
+                ["country"] = "CM",
+                ["method"] = Operateurs.De(telephone) == Operateurs.Mtn ? "mtn_cm" : "orange_cm",
+                ["recipient"] = new { msisdn = telephone },
+                ["customer"] = new { first_name = prenom, last_name = nom, phone = "+" + telephone },
+                ["description"] = description,
+                ["metadata"] = new { cle_reversement = cleIdempotence },
+                // Frais de reversement déduits : le propriétaire reçoit le montant moins ces frais
+                ["fee_charge_mode"] = "DEDUCTED",
+            });
+            using var reponse = await http.SendAsync(requete);
+            code = reponse.StatusCode;
+            corps = await reponse.Content.ReadAsStringAsync();
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            // La demande a pu arriver chez SasPay : on réessaiera avec la même clé, sans risque de double envoi
+            journal.LogWarning(ex, "SasPay payout sans réponse (clé {Cle})", cleIdempotence);
+            return new DemandeReversement(ResultatReversement.Incertain, null, "Service de paiement injoignable");
+        }
+
+        if ((int)code is >= 200 and < 300)
+            return new DemandeReversement(ResultatReversement.Accepte,
+                Texte(Donnees(corps), "id") ?? throw new RegleMetierException("Réponse inattendue du service de paiement."), null);
+
+        var erreur = MessageErreur(corps) ?? $"HTTP {(int)code}";
+        var codeErreur = CodeErreur(corps);
+        // Panne, limite de débit, ou même clé encore en cours de traitement : il faut réessayer avec la même clé
+        if ((int)code >= 500 || code is System.Net.HttpStatusCode.Conflict or System.Net.HttpStatusCode.TooManyRequests)
+        {
+            journal.LogWarning("SasPay payout à réessayer ({Statut}) : {Corps}", (int)code, corps);
+            return new DemandeReversement(ResultatReversement.Incertain, null, erreur);
+        }
+        // Configuration à corriger chez SasPay (IP du serveur, droits de la clé) ou fonds pas encore disponibles
+        if (code is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden
+            || codeErreur is "insufficient_balance")
+        {
+            journal.LogError("SasPay payout non envoyé ({Statut}, {Code}) : {Corps}", (int)code, codeErreur, corps);
+            return new DemandeReversement(ResultatReversement.NonEnvoye, null, erreur);
+        }
+
+        journal.LogError("SasPay payout refusé ({Statut}) : {Corps}", (int)code, corps);
+        return new DemandeReversement(ResultatReversement.Refuse, null, erreur);
+    }
+
+    public Task<StatutPaiementMobile> StatutReversementAsync(string reference) =>
+        VerifierAsync($"/payouts/{Uri.EscapeDataString(reference)}/verify/", "Reversement", reference);
+
+    // Statut d'un paiement ou d'un reversement : SasPay revérifie l'état réel auprès de l'opérateur avant de répondre
+    private async Task<StatutPaiementMobile> VerifierAsync(string chemin, string nature, string reference)
+    {
+        using var requete = Requete(HttpMethod.Get, chemin);
         using var reponse = await http.SendAsync(requete);
         var corps = await reponse.Content.ReadAsStringAsync();
         if (!reponse.IsSuccessStatusCode)
@@ -94,8 +158,26 @@ public class SaspayService(HttpClient http, IConfiguration configuration, TimePr
         };
         // Réponse complète de SasPay en cas d'échec (aucun secret dedans) : le motif aide à diagnostiquer
         if (etat == EtatPaiementMobile.Echoue)
-            journal.LogWarning("Paiement SasPay {Reference} échoué : {Corps}", reference, corps);
-        return new StatutPaiementMobile(etat, null, Texte(d, "external_reference") ?? Texte(d, "reference"));
+            journal.LogWarning("{Nature} SasPay {Reference} échoué : {Corps}", nature, reference, corps);
+
+        var net = decimal.TryParse(Texte(d, "net_amount"), NumberStyles.Number, CultureInfo.InvariantCulture, out var n) ? n : (decimal?)null;
+        var referenceOperateur = Texte(d, "external_reference");
+        if (string.IsNullOrWhiteSpace(referenceOperateur)) referenceOperateur = Texte(d, "reference");
+        return new StatutPaiementMobile(etat, null, referenceOperateur, net);
+    }
+
+    // Code d'erreur stable de SasPay : { "error": { "code": "insufficient_balance" } }
+    private static string? CodeErreur(string corps)
+    {
+        try
+        {
+            var racine = JsonDocument.Parse(corps).RootElement;
+            return Texte(racine.TryGetProperty("error", out var e) ? e : racine, "code");
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     // Signature SasPay : HMAC-SHA256 (hexadécimal) de « horodatage.corps » avec le secret du webhook,

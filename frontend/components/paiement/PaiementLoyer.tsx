@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CircleAlert, CircleCheck, CircleX, Clock, Home, Loader2, PartyPopper, Smartphone, Phone } from "lucide-react";
+import { CircleAlert, CircleCheck, CircleX, Clock, ExternalLink, Home, Loader2, PartyPopper, Smartphone, Phone } from "lucide-react";
 import Input from "@/components/ui/Input";
 import { apiClient, ErreurApi } from "@/lib/api-client";
 import { fcfa, dateCourte, nomMois } from "@/lib/format";
@@ -22,17 +22,47 @@ const statutsPaiement = {
 } as const;
 
 // Paiement du loyer par le locataire : choix du mois, numéro Mobile Money, validation sur le téléphone
-export default function PaiementLoyer({ jeton, page }: { jeton: string; page: PageLoyer }) {
+export default function PaiementLoyer({
+  jeton,
+  page,
+  paiementRetour,
+}: {
+  jeton: string;
+  page: PageLoyer;
+  paiementRetour?: number; // retour depuis la page de paiement SasPay : paiement à suivre
+}) {
   const router = useRouter();
   const [mois, setMois] = useState(page.moisDus[0]?.mois ?? "");
   const [erreur, setErreur] = useState("");
   const [envoi, setEnvoi] = useState(false);
   const [enCours, setEnCours] = useState<Paiement | null>(null); // en attente de validation sur le téléphone
   const [resultat, setResultat] = useState<Paiement | null>(null);
+  const [redirection, setRedirection] = useState(false); // départ vers la page de paiement SasPay
 
   // Mois sélectionné ; s'il vient d'être payé (il disparaît de la liste), on passe au suivant
   const choisi = page.moisDus.find((m) => m.mois === mois) ?? page.moisDus[0];
   const base = `/paiement-loyer/${encodeURIComponent(jeton)}`;
+
+  // Retour depuis la page de paiement SasPay : on reprend le suivi de ce paiement
+  useEffect(() => {
+    if (!paiementRetour) return;
+    let actif = true;
+    apiClient<Paiement>(`${base}/paiements/${paiementRetour}`)
+      .then((p) => {
+        if (!actif) return;
+        if (p.statut === "EnAttente") setEnCours(p);
+        else {
+          setResultat(p);
+          router.refresh();
+        }
+      })
+      .catch(() => {
+        // paiement introuvable : on affiche simplement la page
+      });
+    return () => {
+      actif = false;
+    };
+  }, [paiementRetour, base, router]);
 
   // Pendant l'attente : statut redemandé toutes les 4 secondes (3 minutes maximum)
   useEffect(() => {
@@ -60,7 +90,14 @@ export default function PaiementLoyer({ jeton, page }: { jeton: string; page: Pa
     setResultat(null);
     setEnvoi(true);
     try {
-      setEnCours(await apiClient<Paiement>(`${base}/paiements`, { methode: "POST", corps: { mois: choisi?.mois, telephone } }));
+      const p = await apiClient<Paiement>(`${base}/paiements`, { methode: "POST", corps: { mois: choisi?.mois, telephone } });
+      // Orange Money (et parfois MTN) : le paiement se fait sur la page SasPay, puis retour automatique ici
+      if (p.urlPaiement) {
+        setRedirection(true);
+        window.location.assign(p.urlPaiement);
+        return;
+      }
+      setEnCours(p);
     } catch (err) {
       setErreur(err instanceof ErreurApi ? err.message : "Le paiement n'a pas pu être lancé. Réessayez.");
     } finally {
@@ -89,7 +126,7 @@ export default function PaiementLoyer({ jeton, page }: { jeton: string; page: Pa
 
       {page.verseA && (
         <p className="rounded-lg bg-white px-4 py-3 text-sm text-gray-600 shadow-sm border border-gray-100">
-          Votre paiement est versé directement à <strong className="text-gray-900">{page.verseA}</strong>.
+          Votre paiement est reversé automatiquement à <strong className="text-gray-900">{page.verseA}</strong>.
         </p>
       )}
 
@@ -133,7 +170,20 @@ export default function PaiementLoyer({ jeton, page }: { jeton: string; page: Pa
 
       {/* Paiement */}
       <section className="rounded-xl border border-gray-100 bg-white shadow-sm">
-        {enCours ? (
+        {redirection ? (
+          <div className="flex flex-col items-center gap-4 px-6 py-10 text-center" role="status" aria-live="polite">
+            <span className="flex size-16 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+              <ExternalLink className="size-8" />
+            </span>
+            <div>
+              <p className="text-lg font-semibold text-gray-900">Ouverture de la page de paiement sécurisée…</p>
+              <p className="mt-1 text-gray-600">
+                Validez le paiement sur la page SasPay : vous reviendrez ici automatiquement une fois le paiement terminé.
+              </p>
+            </div>
+            <Loader2 className="size-6 animate-spin text-blue-600" />
+          </div>
+        ) : enCours ? (
           <div className="flex flex-col items-center gap-4 px-6 py-10 text-center" role="status" aria-live="polite">
             <span className="relative flex size-16 items-center justify-center rounded-full bg-blue-100 text-blue-600">
               <Smartphone className="size-8" />
@@ -218,7 +268,9 @@ export default function PaiementLoyer({ jeton, page }: { jeton: string; page: Pa
             >
               {envoi ? "Envoi de la demande…" : choisi ? `Payer ${fcfa(choisi.reste)}` : "Choisissez un mois"}
             </button>
-            <p className="text-center text-xs text-gray-500">Vous recevrez une demande de validation sur votre téléphone.</p>
+            <p className="text-center text-xs text-gray-500">
+              Vous validerez le paiement sur votre téléphone ou sur la page sécurisée SasPay (Orange Money ou MTN MoMo).
+            </p>
           </form>
         )}
       </section>

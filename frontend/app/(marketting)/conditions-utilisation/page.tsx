@@ -88,8 +88,8 @@ const sections: SectionLegale[] = [
           bénéficie d&apos;une réduction indiquée au moment du paiement.
         </p>
         <p>
-          Le paiement doit être validé depuis votre téléphone. Une facture est émise pour chaque paiement réussi et reste
-          consultable dans <strong>Paramètres → Abonnement</strong>.
+          Le paiement doit être validé depuis votre téléphone ou sur la page de paiement sécurisée de SasPay. Une facture
+          est émise pour chaque paiement réussi et reste consultable dans <strong>Paramètres → Abonnement</strong>.
         </p>
         <p>
           <strong>Il n&apos;y a pas de renouvellement automatique</strong> : aucun montant n&apos;est prélevé sans une
@@ -98,6 +98,26 @@ const sections: SectionLegale[] = [
         <p>
           Les sommes versées pour une période commencée ne sont pas remboursables, sauf erreur de facturation ou double
           paiement, qui sont remboursés sur demande.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "loyers-en-ligne",
+    titre: "Paiement des loyers en ligne",
+    contenu: (
+      <>
+        <p>
+          Chaque locataire peut payer son loyer depuis son lien personnel, par Orange Money ou MTN Mobile Money via SasPay.
+          Le locataire paie le montant exact du loyer. La somme est encaissée par IMMO PILOT puis{" "}
+          <strong>reversée automatiquement</strong> sur le compte Mobile Money de réception indiqué pour le logement
+          (propriétaire du logement, de l&apos;immeuble ou, à défaut, le bailleur).
+        </p>
+        <p>
+          Les frais du prestataire de paiement (encaissement et reversement) sont <strong>déduits du montant reversé</strong> ;
+          le montant reçu est indiqué pour chaque loyer dans la page Paiements. Le bailleur est responsable de
+          l&apos;exactitude des numéros de réception qu&apos;il renseigne. Si un reversement n&apos;aboutit pas, le bailleur
+          en est averti et la somme lui est reversée après vérification par le support.
         </p>
       </>
     ),

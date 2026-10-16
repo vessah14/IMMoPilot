@@ -120,5 +120,7 @@ public class PaiementService(
             p.Periode,
             p.Moyen,
             p.Reference,
-            p.Statut));
+            p.Statut,
+            p.StatutReversement,
+            p.MontantReverse));
 }

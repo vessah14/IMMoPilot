@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ImmoPilot.Api.Dtos;
 using ImmoPilot.Api.Interfaces;
 using ImmoPilot.Api.Models;
@@ -35,7 +36,11 @@ public class AbonnementController(IAbonnementService service) : ControllerBase
 [ApiController]
 [AllowAnonymous]
 [Route("api/saspay/webhook")]
-public class SaspayWebhookController(IAbonnementService service) : ControllerBase
+public class SaspayWebhookController(
+    IPaiementMobile paiements,
+    IAbonnementService abonnements,
+    IPaiementLoyerService loyers,
+    ILogger<SaspayWebhookController> journal) : ControllerBase
 {
     [HttpPost]
     [RequestSizeLimit(64 * 1024)]
@@ -45,8 +50,31 @@ public class SaspayWebhookController(IAbonnementService service) : ControllerBas
         using var lecteur = new StreamReader(Request.Body);
         var corps = await lecteur.ReadToEndAsync();
 
-        var valide = await service.TraiterNotificationAsync(corps,
-            Request.Headers["X-Webhook-Signature"].FirstOrDefault(), Request.Headers["X-Webhook-Timestamp"].FirstOrDefault());
-        return valide ? Ok() : Unauthorized();
+        if (!paiements.SignatureWebhookValide(corps,
+                Request.Headers["X-Webhook-Signature"].FirstOrDefault(), Request.Headers["X-Webhook-Timestamp"].FirstOrDefault()))
+        {
+            journal.LogWarning("Notification SasPay rejetée : signature ou horodatage invalide");
+            return Unauthorized();
+        }
+
+        // { "event": "transaction.success", "data": { "id": "…", … } } : seul l'identifiant de la transaction nous intéresse,
+        // son statut est toujours redemandé à SasPay
+        string? reference = null;
+        try
+        {
+            using var json = JsonDocument.Parse(corps);
+            if (json.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Object
+                && data.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String)
+                reference = id.GetString();
+        }
+        catch (JsonException)
+        {
+            journal.LogWarning("Notification SasPay illisible");
+        }
+
+        // Abonnement d'un bailleur, sinon loyer d'un locataire ou reversement à un propriétaire
+        if (reference is not null && !await abonnements.ActualiserParReferenceAsync(reference))
+            await loyers.ActualiserParReferenceAsync(reference);
+        return Ok(); // event sans transaction (ex : webhook.test) ou inconnue : rien à faire
     }
 }

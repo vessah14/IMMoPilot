@@ -13,4 +13,10 @@ public interface IPaiementLoyerService
 
     // Où en est le paiement ? (interroge l'opérateur tant qu'il est en attente)
     Task<PaiementLoyerDto?> VerifierAsync(string jeton, int paiementId);
+
+    // Webhook SasPay : met à jour le loyer ou le reversement ayant cet identifiant (false si aucun)
+    Task<bool> ActualiserParReferenceAsync(string reference);
+
+    // Tâche de fond : demandes restées en attente et reversements aux propriétaires à (re)faire
+    Task TacheDeFondAsync();
 }

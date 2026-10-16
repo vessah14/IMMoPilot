@@ -10,9 +10,19 @@ public record DemandePaiementMobile(string Reference, string? CodeUssd, string? 
 
 public enum EtatPaiementMobile { EnAttente, Reussi, Echoue }
 
-public record StatutPaiementMobile(EtatPaiementMobile Etat, string? Operateur, string? ReferenceOperateur);
+// MontantNet : ce qui arrive réellement (paiement : sur notre wallet ; reversement : chez le bénéficiaire), frais déduits
+public record StatutPaiementMobile(EtatPaiementMobile Etat, string? Operateur, string? ReferenceOperateur, decimal? MontantNet = null);
 
-// Encaissement Orange Money / MTN MoMo : SasPay (https://saspay.me), ou simulateur sans argent réel
+// Résultat de l'envoi d'un reversement :
+//   Accepte   : reversement créé (Reference), sa confirmation arrive ensuite
+//   Incertain : coupure réseau ou panne du prestataire, il a pu être créé → réessayer avec la MÊME clé d'idempotence
+//   NonEnvoye : refus avant toute création (solde pas encore disponible, IP non autorisée…) → réessayer plus tard avec une nouvelle clé
+//   Refuse    : demande invalide (numéro, réseau…) → inutile de réessayer
+public enum ResultatReversement { Accepte, Incertain, NonEnvoye, Refuse }
+
+public record DemandeReversement(ResultatReversement Resultat, string? Reference, string? Erreur);
+
+// Encaissement et reversement Orange Money / MTN MoMo : SasPay (https://saspay.me), ou simulateur sans argent réel
 public interface IPaiementMobile
 {
     bool EstConfigure { get; }
@@ -25,6 +35,12 @@ public interface IPaiementMobile
         string referenceExterne, string? urlRetour);
 
     Task<StatutPaiementMobile> StatutAsync(string reference);
+
+    // Envoie de l'argent de notre wallet vers un numéro Mobile Money (frais déduits du montant envoyé)
+    Task<DemandeReversement> ReverserAsync(decimal montant, string telephone, string nomBeneficiaire, string description,
+        string cleIdempotence);
+
+    Task<StatutPaiementMobile> StatutReversementAsync(string reference);
 
     // Vérifie qu'une notification (webhook) vient bien du prestataire : signature calculée sur le corps brut reçu
     bool SignatureWebhookValide(string corps, string? signature, string? horodatage);

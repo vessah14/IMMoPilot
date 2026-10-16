@@ -259,6 +259,10 @@ namespace ImmoPilot.Api.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("CleReversement")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("CompteVersement")
                         .HasColumnType("text");
 
@@ -268,13 +272,31 @@ namespace ImmoPilot.Api.Data.Migrations
                     b.Property<DateOnly>("DatePaiement")
                         .HasColumnType("date");
 
+                    b.Property<DateTime?>("DateReversement")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EchecsReversement")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("EnLigne")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("ErreurReversement")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
 
                     b.Property<int>("LocataireId")
                         .HasColumnType("integer");
 
                     b.Property<decimal>("Montant")
+                        .HasPrecision(14, 2)
+                        .HasColumnType("numeric(14,2)");
+
+                    b.Property<decimal?>("MontantNet")
+                        .HasPrecision(14, 2)
+                        .HasColumnType("numeric(14,2)");
+
+                    b.Property<decimal?>("MontantReverse")
                         .HasPrecision(14, 2)
                         .HasColumnType("numeric(14,2)");
 
@@ -290,8 +312,16 @@ namespace ImmoPilot.Api.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("ReferenceReversement")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("Statut")
                         .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("StatutReversement")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
@@ -300,6 +330,12 @@ namespace ImmoPilot.Api.Data.Migrations
                     b.HasIndex("LocataireId");
 
                     b.HasIndex("Periode");
+
+                    b.HasIndex("Reference");
+
+                    b.HasIndex("ReferenceReversement");
+
+                    b.HasIndex("StatutReversement");
 
                     b.ToTable("Paiements");
                 });

@@ -22,4 +22,6 @@ public record PaiementDto(
     DateOnly Periode,
     MoyenPaiement Moyen,
     string? Reference,
-    StatutPaiement Statut);
+    StatutPaiement Statut,
+    StatutReversement? Reversement, // loyer payé en ligne : où en est son reversement au propriétaire
+    decimal? MontantReverse); // reçu par le propriétaire, frais déduits

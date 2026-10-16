@@ -20,6 +20,7 @@ public class SimulateurPaiement(TimeProvider horloge, ILogger<SimulateurPaiement
 
     // Transactions en mémoire (perdues au redémarrage de l'API, comme il se doit pour un simulateur)
     private readonly ConcurrentDictionary<string, Transaction> transactions = new();
+    private readonly ConcurrentDictionary<string, decimal> reversements = new();
 
     public bool EstConfigure => true;
     public bool EstSimulation => true;
@@ -49,8 +50,25 @@ public class SimulateurPaiement(TimeProvider horloge, ILogger<SimulateurPaiement
             : ecoule >= DelaiReussite ? EtatPaiementMobile.Reussi : EtatPaiementMobile.EnAttente;
 
         return Task.FromResult(new StatutPaiementMobile(etat, Operateurs.De(t.Telephone),
-            etat == EtatPaiementMobile.Reussi ? $"SIMU{reference[^8..].ToUpperInvariant()}" : null));
+            etat == EtatPaiementMobile.Reussi ? $"SIMU{reference[^8..].ToUpperInvariant()}" : null,
+            etat == EtatPaiementMobile.Reussi ? t.Montant : null)); // pas de frais en simulation
     }
+
+    // Reversement simulé : toujours accepté puis reçu immédiatement, sans frais
+    public Task<DemandeReversement> ReverserAsync(decimal montant, string telephone, string nomBeneficiaire, string description,
+        string cleIdempotence)
+    {
+        var reference = $"SIMU-REV-{Guid.NewGuid():N}"[..21];
+        reversements[reference] = montant;
+        journal.LogInformation("[Simulateur] Reversement de {Montant} FCFA au {Telephone} ({Description}) → {Reference}",
+            montant, telephone, description, reference);
+        return Task.FromResult(new DemandeReversement(ResultatReversement.Accepte, reference, null));
+    }
+
+    public Task<StatutPaiementMobile> StatutReversementAsync(string reference) =>
+        Task.FromResult(reversements.TryGetValue(reference, out var montant)
+            ? new StatutPaiementMobile(EtatPaiementMobile.Reussi, null, reference, montant)
+            : new StatutPaiementMobile(EtatPaiementMobile.Echoue, null, null)); // inconnu (ex : API redémarrée)
 
     // Pas de webhook en simulation : la page de paiement et la tâche de fond interrogent StatutAsync
     public bool SignatureWebhookValide(string corps, string? signature, string? horodatage) => false;

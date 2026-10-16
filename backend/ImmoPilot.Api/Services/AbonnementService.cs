@@ -3,7 +3,6 @@ using ImmoPilot.Api.Dtos;
 using ImmoPilot.Api.Exceptions;
 using ImmoPilot.Api.Interfaces;
 using ImmoPilot.Api.Models;
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 
 namespace ImmoPilot.Api.Services;
@@ -105,33 +104,13 @@ public class AbonnementService(
 
     // ================= Webhook SasPay =================
 
-    public async Task<bool> TraiterNotificationAsync(string corps, string? signature, string? horodatage)
+    public async Task<bool> ActualiserParReferenceAsync(string reference)
     {
-        if (!paiements.SignatureWebhookValide(corps, signature, horodatage))
-        {
-            journal.LogWarning("Notification SasPay rejetée : signature ou horodatage invalide");
-            return false;
-        }
-
-        // { "event": "transaction.success", "data": { "id": "…", … } } : seul l'identifiant du paiement nous intéresse
-        string? reference = null;
-        try
-        {
-            using var json = JsonDocument.Parse(corps);
-            if (json.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Object
-                && data.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String)
-                reference = id.GetString();
-        }
-        catch (JsonException)
-        {
-            journal.LogWarning("Notification SasPay illisible");
-        }
-        if (reference is null) return true; // event sans paiement (ex : webhook.test) : rien à faire
-
         var paiement = await db.PaiementsAbonnement.FirstOrDefaultAsync(p => p.ReferencePaiement == reference);
+        if (paiement is null) return false;
 
         // On ne se fie pas au contenu de la notification : le statut est redemandé à SasPay
-        if (paiement is { Statut: StatutPaiementAbonnement.EnAttente }) await ActualiserAsync(paiement);
+        if (paiement.Statut == StatutPaiementAbonnement.EnAttente) await ActualiserAsync(paiement);
         return true;
     }
 

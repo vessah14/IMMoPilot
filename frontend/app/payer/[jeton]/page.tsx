@@ -12,8 +12,16 @@ export const metadata: Metadata = {
 };
 
 // Page ouverte par le locataire depuis le lien envoyé par son bailleur (sans compte)
-export default async function PayerLoyer({ params }: { params: Promise<{ jeton: string }> }) {
+// ?paiement=5 : retour depuis la page de paiement SasPay, on suit ce paiement jusqu'à sa confirmation
+export default async function PayerLoyer({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ jeton: string }>;
+  searchParams: Promise<{ paiement?: string }>;
+}) {
   const { jeton } = await params;
+  const { paiement } = await searchParams;
   const page = await apiPublicOuIntrouvable<PageLoyer>(`/paiement-loyer/${encodeURIComponent(jeton)}`);
   if (!page) notFound(); // lien inconnu ou remplacé par le bailleur
 
@@ -29,7 +37,7 @@ export default async function PayerLoyer({ params }: { params: Promise<{ jeton: 
       </header>
 
       <div className="mx-auto max-w-xl px-4 py-8">
-        <PaiementLoyer jeton={jeton} page={page} />
+        <PaiementLoyer jeton={jeton} page={page} paiementRetour={/^\d+$/.test(paiement ?? "") ? Number(paiement) : undefined} />
       </div>
     </main>
   );

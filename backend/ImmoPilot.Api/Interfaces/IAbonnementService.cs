@@ -10,8 +10,8 @@ public interface IAbonnementService
     Task<PaiementAbonnementDto> PayerAsync(PaiementAbonnementRequeteDto requete);
     Task<PaiementAbonnementDto?> VerifierAsync(int id); // interroge SasPay si le paiement est encore en attente
 
-    // ---- Webhook SasPay ---- (false si la signature est invalide) : corps brut et en-têtes X-Webhook-*
-    Task<bool> TraiterNotificationAsync(string corps, string? signature, string? horodatage);
+    // ---- Webhook SasPay : met à jour le paiement d'abonnement ayant cet identifiant SasPay (false si aucun) ----
+    Task<bool> ActualiserParReferenceAsync(string reference);
 
     // ---- Super admin ----
     Task<IReadOnlyList<PaiementAbonnementAdminDto>> TousAsync();

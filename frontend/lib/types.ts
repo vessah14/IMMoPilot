@@ -98,7 +98,11 @@ export type Paiement = {
   moyen: MoyenPaiement;
   reference: string | null;
   statut: StatutPaiement;
+  reversement: StatutReversement | null; // loyer payé en ligne : reversement au propriétaire
+  montantReverse: number | null; // reçu par le propriétaire, frais déduits
 };
+
+export type StatutReversement = "AFaire" | "EnCours" | "Reverse" | "Echoue";
 
 export type Echeance = {
   locataireId: number;
@@ -204,6 +208,7 @@ export type PaiementLoyer = {
   date: string;
   operateur: string | null;
   codeUssd: string | null;
+  urlPaiement: string | null; // page de paiement SasPay vers laquelle rediriger (à la création uniquement)
   reference: string | null;
 };
 

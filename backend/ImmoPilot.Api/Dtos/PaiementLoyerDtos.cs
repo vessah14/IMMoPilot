@@ -28,6 +28,7 @@ public record PaiementLoyerDto(
     DateOnly Date,
     string? Operateur,
     string? CodeUssd, // code à composer si la demande n'apparaît pas sur le téléphone
+    string? UrlPaiement, // page de paiement SasPay vers laquelle rediriger (renvoyée à la création uniquement)
     string? Reference);
 
 public record PaiementLoyerRequeteDto(

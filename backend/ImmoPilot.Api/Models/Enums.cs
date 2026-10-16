@@ -42,6 +42,15 @@ public enum StatutPaiement
     Echoue,
 }
 
+// Reversement au propriétaire d'un loyer payé en ligne (encaissé d'abord sur le wallet SasPay d'IMMO PILOT)
+public enum StatutReversement
+{
+    AFaire,   // à envoyer (ou à renvoyer après un essai sans suite)
+    EnCours,  // envoyé, en attente de la confirmation de l'opérateur
+    Reverse,  // le propriétaire a reçu l'argent
+    Echoue,   // abandonné après plusieurs échecs : à régler à la main depuis le tableau de bord SasPay
+}
+
 public enum RoleUtilisateur
 {
     Bailleur,

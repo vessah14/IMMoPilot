@@ -95,6 +95,15 @@ public class ImmoPilotDbContext(DbContextOptions<ImmoPilotDbContext> options) : 
             e.Property(p => p.Statut).HasConversion<string>().HasMaxLength(20);
             e.Property(p => p.Reference).HasMaxLength(100);
             e.HasIndex(p => p.Periode);
+            e.HasIndex(p => p.Reference); // webhook SasPay : retrouver le loyer par l'identifiant du paiement
+            e.Property(p => p.StatutReversement).HasConversion<string>().HasMaxLength(20);
+            e.HasIndex(p => p.StatutReversement);
+            e.Property(p => p.MontantNet).HasPrecision(14, 2);
+            e.Property(p => p.MontantReverse).HasPrecision(14, 2);
+            e.Property(p => p.ReferenceReversement).HasMaxLength(100);
+            e.HasIndex(p => p.ReferenceReversement);
+            e.Property(p => p.CleReversement).HasMaxLength(100);
+            e.Property(p => p.ErreurReversement).HasMaxLength(300);
 
             // L'historique des paiements est conservé : on ne supprime pas un locataire qui a payé
             e.HasOne(p => p.Locataire)

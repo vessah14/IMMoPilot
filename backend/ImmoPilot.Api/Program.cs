@@ -45,7 +45,7 @@ builder.Services.AddHttpClient<IStockagePhotos, CloudinaryService>();
 // Paiements : SasPay (clé Saspay:CleApi), ou simulateur (sans argent réel) :
 // - en développement si Paiement:Simulation = true ;
 // - en ligne si Demo:Actif = true (site de démonstration / portfolio : aucun argent réel ne circule).
-// Les loyers payés par les locataires passent toujours par le simulateur (compte d'encaissement pas encore choisi).
+// Les loyers passent par le même moyen de paiement, puis sont reversés automatiquement au propriétaire (payout).
 builder.Services.AddSingleton<SimulateurPaiement>();
 builder.Services.AddScoped<IPaiementLoyerService, PaiementLoyerService>();
 var modeDemo = builder.Configuration.GetValue<bool>("Demo:Actif");

@@ -5,7 +5,7 @@
 **Gestion locative pour les propriétaires et les agences au Cameroun** : immeubles, logements, locataires, loyers
 et paiement des loyers par **Orange Money / MTN MoMo**.
 
-> Projet de portfolio : les paiements passent par un simulateur, **aucun argent réel ne circule**.
+> Paiements réels par SasPay (abonnements et loyers) ; en développement, un simulateur évite tout argent réel.
 
 ## Fonctionnalités
 

@@ -89,7 +89,11 @@ Webhook à créer dans le tableau de bord SasPay : `https://<adresse-de-l-api>/a
 HMAC-SHA256 de « horodatage.corps ») et l'horodatage (5 minutes au plus) sont vérifiés à chaque notification.
 
 En développement, `Paiement:Simulation = true` (appsettings.Development.json) remplace SasPay par un simulateur.
-Les loyers payés par les locataires passent encore toujours par le simulateur.
+Loyers payés par les locataires : même encaissement SasPay, puis reversement automatique (payout) au propriétaire
+du logement, frais déduits. Prérequis côté SasPay : clé avec la portée « Encaissement et décaissement » et adresses IP
+sortantes de l’API déclarées dans Développeur → IP Whitelist. Un reversement qui ne part pas (fonds pas encore
+disponibles, IP non autorisée…) est réessayé toutes les 10 minutes, avec la même clé d’idempotence tant que son sort
+est incertain ; au bout de 7 jours ou de 3 refus de l’opérateur, il est marqué « à régulariser » et le bailleur est prévenu.
 
 ## Routes
 
