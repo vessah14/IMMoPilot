@@ -42,6 +42,8 @@ public class SaspayService(HttpClient http, IConfiguration configuration, TimePr
             ["description"] = description,
             ["customer"] = new { email = client.Email, first_name = prenom, last_name = nom, phone = "+" + client.Telephone },
             ["metadata"] = new { reference_externe = referenceExterne },
+            // Frais SasPay à la charge d'IMMO PILOT : le bailleur paie exactement le prix affiché
+            ["fee_charge_mode"] = "DEDUCTED",
             ["return_url"] = urlRetour, // retour sur IMMO PILOT après un paiement sur la page SasPay
         });
 
