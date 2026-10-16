@@ -135,10 +135,8 @@ public class PaiementLoyerService(
             return true;
         }
 
-        var reversement = await db.Paiements.FirstOrDefaultAsync(p => p.ReferenceReversement == reference);
-        if (reversement is null) return false;
-        if (reversement.StatutReversement == StatutReversement.EnCours)
-            await ActualiserReversementAsync(reversement, await LocataireParIdAsync(reversement.LocataireId));
+        if (!await db.Paiements.AnyAsync(p => p.ReferenceReversement == reference)) return false;
+        await ActualiserReversementAsync(reference);
         return true;
     }
 
@@ -152,29 +150,21 @@ public class PaiementLoyerService(
             .Take(50)
             .ToListAsync();
         foreach (var p in enAttente)
-            await SansPlanterAsync(p, async () => await ActualiserAsync(p, await LocataireParIdAsync(p.LocataireId)));
+            await SansPlanterAsync(p.Id, async () => await ActualiserAsync(p, await LocataireParIdAsync(p.LocataireId)));
 
+        // Reversements envoyés depuis un moment : statut redemandé (webhook non reçu) ;
+        // envois restés sans réponse : renvoyés tels quels avec la même clé (aucun double versement possible)
         var essai = Maintenant - EcartEssais;
-        var aReverser = await db.Paiements
-            .Where(p => p.StatutReversement == StatutReversement.AFaire && (p.DateReversement == null || p.DateReversement < essai)
-                        || p.StatutReversement == StatutReversement.EnCours && p.DateReversement < essai)
-            .OrderBy(p => p.DateReversement)
-            .Take(50)
+        var enCours = await PaiementsAvecLocataire()
+            .Where(p => p.StatutReversement == StatutReversement.EnCours && p.DateReversement < essai)
+            .Take(100)
             .ToListAsync();
-        foreach (var p in aReverser)
-            await SansPlanterAsync(p, async () =>
-            {
-                var l = await LocataireParIdAsync(p.LocataireId);
-                if (p.StatutReversement == StatutReversement.EnCours && p.ReferenceReversement is not null)
-                    await ActualiserReversementAsync(p, l);
-                else
-                {
-                    // Envoi interrompu avant d'obtenir une réponse : on le renvoie avec la même clé (aucun double versement)
-                    if (p.StatutReversement == StatutReversement.EnCours) p.StatutReversement = StatutReversement.AFaire;
-                    await db.SaveChangesAsync();
-                    await ReverserAsync(p, l);
-                }
-            });
+        foreach (var reference in enCours.Where(p => p.ReferenceReversement != null).Select(p => p.ReferenceReversement!).Distinct())
+            await SansPlanterAsync(reference, () => ActualiserReversementAsync(reference));
+        foreach (var envoi in enCours.Where(p => p.ReferenceReversement == null).GroupBy(p => p.CleReversement ?? NouvelleCle(p)))
+            await SansPlanterAsync(envoi.Key, () => EnvoyerAsync(envoi.ToList(), envoi.Key));
+
+        await SansPlanterAsync("reversements", EnvoyerReversementsAsync);
     }
 
     public async Task<bool> RelancerReversementAsync(int paiementId)
@@ -184,19 +174,21 @@ public class PaiementLoyerService(
         // Reversement déjà envoyé et en attente de réponse : on redemande son statut au lieu de le renvoyer
         if (p.StatutReversement == StatutReversement.EnCours && p.ReferenceReversement is not null)
         {
-            await ActualiserReversementAsync(p, await LocataireParIdAsync(p.LocataireId));
+            await ActualiserReversementAsync(p.ReferenceReversement);
             return true;
         }
+        // Envoi en cours sans réponse : il sera renvoyé tel quel (même clé) par la tâche de fond, sans risque de doublon
+        if (p.StatutReversement == StatutReversement.EnCours) return true;
 
         // Nouveau départ : nouvelle clé (aucun envoi précédent n'a abouti), compteur d'échecs remis à zéro
         p.StatutReversement = StatutReversement.AFaire;
         p.EchecsReversement = 0;
         p.CleReversement = NouvelleCle(p);
-        p.ReferenceReversement = null;
         p.ErreurReversement = null;
+        p.DateReversement = null;
         await db.SaveChangesAsync();
         journal.LogInformation("Reversement du loyer {Id} relancé par le super admin", p.Id);
-        await ReverserAsync(p, await LocataireParIdAsync(p.LocataireId));
+        await EnvoyerReversementsAsync();
         return true;
     }
 
@@ -251,95 +243,187 @@ public class PaiementLoyerService(
             operateur, p.Reference, bailleur, l.Proprietaire.Email, l.JetonPaiement));
         fileEmails.Ajouter(modeles.LoyerRecuBailleur(l.Proprietaire.Email, l.NomComplet, logement, p.Montant, p.Periode, compte));
 
-        // Reversement immédiat ; en cas d'échec, la tâche de fond réessaiera
-        await SansPlanterAsync(p, () => ReverserAsync(p, l));
+        // Reversement immédiat (avec les petits montants en attente pour le même numéro) ; sinon la tâche de fond réessaiera
+        await SansPlanterAsync(p.Id, EnvoyerReversementsAsync);
     }
 
     // ---- Reversement au propriétaire ----
 
-    private async Task ReverserAsync(Paiement p, Locataire l)
-    {
-        // Réservation atomique : un seul envoi à la fois pour ce loyer (vérification de la page, webhook, tâche de fond)
-        var reserve = await db.Paiements
-            .Where(x => x.Id == p.Id && x.StatutReversement == StatutReversement.AFaire)
-            .ExecuteUpdateAsync(s => s.SetProperty(x => x.StatutReversement, StatutReversement.EnCours)
-                .SetProperty(x => x.DateReversement, Maintenant));
-        if (reserve == 0) return;
-        await db.Entry(p).ReloadAsync();
+    // SasPay refuse tout retrait de moins de 3 000 FCFA (Saspay:MinimumReversement) : les petits montants destinés
+    // au même numéro sont cumulés, puis reversés en un seul retrait dès que le total atteint ce minimum.
+    private decimal MinimumReversement => configuration.GetValue<decimal?>("Saspay:MinimumReversement") ?? 3000m;
+    private const string AttenteMinimum = "En attente du minimum de retrait";
 
-        if (p.CompteVersement is null || p.MontantNet is not > 0m)
+    // Envoie les reversements à faire, regroupés par numéro de réception
+    private async Task EnvoyerReversementsAsync()
+    {
+        var essai = Maintenant - EcartEssais;
+        // Jamais essayés (ou en attente du minimum) : tout de suite ; refusés avant envoi : 10 minutes après le dernier essai
+        var aFaire = await PaiementsAvecLocataire()
+            .Where(p => p.StatutReversement == StatutReversement.AFaire && (p.DateReversement == null || p.DateReversement < essai))
+            .OrderBy(p => p.Id)
+            .Take(200)
+            .ToListAsync();
+
+        // Les numéros sont chiffrés en base (texte différent à chaque écriture) : regroupement après lecture
+        foreach (var groupe in aFaire.GroupBy(p => p.CompteVersement ?? ""))
         {
-            await AbandonnerAsync(p, l, "Compte de réception ou montant manquant");
+            var envoi = new List<Paiement>();
+            foreach (var p in groupe)
+                if (p.CompteVersement is null || p.MontantNet is not > 0m) await AbandonnerAsync(p, "Compte de réception ou montant manquant");
+                else envoi.Add(p);
+            if (envoi.Count == 0) continue;
+
+            var total = envoi.Sum(p => p.MontantNet!.Value);
+            if (total < MinimumReversement)
+            {
+                foreach (var p in envoi)
+                    p.ErreurReversement = $"{AttenteMinimum} SasPay ({Dates.Fcfa(MinimumReversement)}) : {Dates.Fcfa(total)} cumulés "
+                                          + "pour ce numéro, envoi groupé dès que le minimum est atteint";
+                await db.SaveChangesAsync();
+                continue;
+            }
+            await SansPlanterAsync(groupe.Key.Length > 4 ? CompteMasque(groupe.Key) : "compte", () => ReserverEtEnvoyerAsync(envoi));
+        }
+    }
+
+    // Réservation atomique de tout le groupe (page du locataire, webhook et tâche de fond peuvent arriver en même temps)
+    private async Task ReserverEtEnvoyerAsync(List<Paiement> envoi)
+    {
+        var ids = envoi.Select(p => p.Id).ToList();
+        // Clé d'idempotence du retrait : dérivée des loyers concernés et de leurs clés, donc identique à chaque renvoi du même envoi
+        var cle = envoi.Count == 1
+            ? envoi[0].CleReversement ?? NouvelleCle(envoi[0])
+            : "REVG-" + Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(
+                string.Join(",", envoi.OrderBy(p => p.Id).Select(p => $"{p.Id}:{p.CleReversement}")))))[..40];
+
+        var reserves = await db.Paiements
+            .Where(x => ids.Contains(x.Id) && x.StatutReversement == StatutReversement.AFaire)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.StatutReversement, StatutReversement.EnCours)
+                .SetProperty(x => x.DateReversement, Maintenant)
+                .SetProperty(x => x.CleReversement, cle));
+        if (reserves != ids.Count)
+        {
+            // Une partie du groupe est déjà prise par un autre traitement : on rend le reste, nouvel essai au prochain passage
+            await db.Paiements
+                .Where(x => ids.Contains(x.Id) && x.CleReversement == cle && x.StatutReversement == StatutReversement.EnCours && x.ReferenceReversement == null)
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.StatutReversement, StatutReversement.AFaire));
             return;
         }
+        foreach (var p in envoi) await db.Entry(p).ReloadAsync();
+        await EnvoyerAsync(envoi, cle);
+    }
 
-        var demande = await paiements.ReverserAsync(p.MontantNet.Value, p.CompteVersement, Destinataire(p, l, masque: false),
-            $"Loyer {Dates.NomMois(p.Periode)} - {l.NomComplet}", p.CleReversement ?? $"REV-{p.Id}-1");
+    // Un seul retrait SasPay pour tout le groupe (déjà réservé, même numéro de réception)
+    private async Task EnvoyerAsync(List<Paiement> envoi, string cle)
+    {
+        var premier = envoi[0];
+        var total = envoi.Sum(p => p.MontantNet ?? 0);
+        var description = envoi.Count == 1
+            ? $"Loyer {Dates.NomMois(premier.Periode)} - {premier.Locataire.NomComplet}"
+            : $"{envoi.Count} loyers - {Destinataire(premier, premier.Locataire, masque: false)}";
+
+        var demande = await paiements.ReverserAsync(total, premier.CompteVersement!, Destinataire(premier, premier.Locataire, masque: false),
+            description, cle);
 
         switch (demande.Resultat)
         {
             case ResultatReversement.Accepte:
-                p.ReferenceReversement = demande.Reference;
-                p.ErreurReversement = null;
+                foreach (var p in envoi)
+                {
+                    p.ReferenceReversement = demande.Reference;
+                    p.ErreurReversement = null;
+                }
                 await db.SaveChangesAsync();
-                await ActualiserReversementAsync(p, l); // le simulateur et certains réseaux confirment tout de suite
+                await ActualiserReversementAsync(demande.Reference!); // le simulateur et certains réseaux confirment tout de suite
                 break;
 
-            case ResultatReversement.Incertain: // même clé au prochain essai : impossible de verser deux fois
-            case ResultatReversement.NonEnvoye:
-                p.StatutReversement = StatutReversement.AFaire;
-                if (demande.Resultat == ResultatReversement.NonEnvoye) p.CleReversement = NouvelleCle(p);
-                p.ErreurReversement = Tronquer(demande.Erreur);
+            case ResultatReversement.Incertain:
+                // Reste réservé avec la même clé : la tâche de fond renverra exactement le même retrait (aucun double versement)
+                foreach (var p in envoi) p.ErreurReversement = Tronquer(demande.Erreur);
                 await db.SaveChangesAsync();
-                if (Maintenant - p.DateDemande > AbandonReversement) await AbandonnerAsync(p, l, demande.Erreur);
+                break;
+
+            case ResultatReversement.NonEnvoye:
+                // Rien n'a été créé chez SasPay : retour dans la file, avec de nouvelles clés pour le prochain essai
+                foreach (var p in envoi)
+                {
+                    p.StatutReversement = StatutReversement.AFaire;
+                    p.CleReversement = NouvelleCle(p);
+                    p.ErreurReversement = Tronquer(demande.Erreur);
+                }
+                await db.SaveChangesAsync();
+                foreach (var p in envoi.Where(p => Maintenant - p.DateDemande > AbandonReversement))
+                    await AbandonnerAsync(p, demande.Erreur);
                 break;
 
             default:
-                await AbandonnerAsync(p, l, demande.Erreur);
+                foreach (var p in envoi) await AbandonnerAsync(p, demande.Erreur);
                 break;
         }
     }
 
-    private async Task ActualiserReversementAsync(Paiement p, Locataire l)
+    // Statut d'un retrait chez SasPay, appliqué à tous les loyers qu'il reverse
+    private async Task ActualiserReversementAsync(string reference)
     {
-        var statut = await paiements.StatutReversementAsync(p.ReferenceReversement!);
+        var envoi = await PaiementsAvecLocataire()
+            .Where(p => p.ReferenceReversement == reference && p.StatutReversement == StatutReversement.EnCours)
+            .ToListAsync();
+        if (envoi.Count == 0) return;
+
+        var statut = await paiements.StatutReversementAsync(reference);
         if (statut.Etat == EtatPaiementMobile.EnAttente) return;
 
         if (statut.Etat == EtatPaiementMobile.Reussi)
         {
-            var recu = await db.Paiements.Where(x => x.Id == p.Id && x.StatutReversement == StatutReversement.EnCours)
+            // Mise à jour atomique : webhook et tâche de fond ne confirment qu'une fois
+            var recus = await db.Paiements
+                .Where(x => x.ReferenceReversement == reference && x.StatutReversement == StatutReversement.EnCours)
                 .ExecuteUpdateAsync(s => s.SetProperty(x => x.StatutReversement, StatutReversement.Reverse)
-                    .SetProperty(x => x.MontantReverse, statut.MontantNet ?? p.MontantNet)
                     .SetProperty(x => x.DateReversement, Maintenant)
                     .SetProperty(x => x.ErreurReversement, (string?)null));
-            if (recu == 0) return;
-            await db.Entry(p).ReloadAsync();
+            if (recus == 0) return;
 
-            notifications.Ajouter(l.ProprietaireId, TypeNotification.Paiement, $"Loyer reversé — {l.NomComplet}",
-                $"{Dates.Fcfa(p.MontantReverse ?? 0)} envoyés sur le compte {Destinataire(p, l)} pour le loyer de "
-                + $"{Dates.NomMois(p.Periode)} ({Dates.Fcfa(p.Montant)} payés, frais déduits).");
+            // Montant reçu (frais de retrait déduits) réparti entre les loyers au prorata
+            var total = envoi.Sum(p => p.MontantNet ?? 0);
+            foreach (var p in envoi)
+            {
+                await db.Entry(p).ReloadAsync();
+                p.MontantReverse = statut.MontantNet is { } net && total > 0
+                    ? decimal.Round((p.MontantNet ?? 0) * net / total)
+                    : p.MontantNet;
+                var groupe = envoi.Count > 1 ? $" (envoi groupé de {envoi.Count} loyers)" : "";
+                notifications.Ajouter(p.Locataire.ProprietaireId, TypeNotification.Paiement, $"Loyer reversé — {p.Locataire.NomComplet}",
+                    $"{Dates.Fcfa(p.MontantReverse ?? 0)} envoyés sur le compte {Destinataire(p, p.Locataire)} pour le loyer de "
+                    + $"{Dates.NomMois(p.Periode)} ({Dates.Fcfa(p.Montant)} payés, frais déduits){groupe}.");
+            }
             await db.SaveChangesAsync();
-            journal.LogInformation("Loyer {Id} reversé : {Montant} FCFA", p.Id, p.MontantReverse);
+            journal.LogInformation("Reversement {Reference} reçu : {Montant} FCFA pour {Nombre} loyer(s) ({Ids})",
+                reference, statut.MontantNet ?? total, envoi.Count, string.Join(", ", envoi.Select(p => p.Id)));
             return;
         }
 
-        // Refusé par l'opérateur : nouvel essai avec une nouvelle clé, abandon au 3e refus
-        p.EchecsReversement++;
-        p.ReferenceReversement = null;
-        if (p.EchecsReversement >= EchecsMax)
+        // Refusé par l'opérateur : nouvel essai avec de nouvelles clés, abandon d'un loyer au 3e refus
+        foreach (var p in envoi)
         {
-            await AbandonnerAsync(p, l, "Reversement refusé par l'opérateur à plusieurs reprises");
-            return;
+            p.EchecsReversement++;
+            p.ReferenceReversement = null;
+            if (p.EchecsReversement >= EchecsMax)
+            {
+                await AbandonnerAsync(p, "Reversement refusé par l'opérateur à plusieurs reprises");
+                continue;
+            }
+            p.StatutReversement = StatutReversement.AFaire;
+            p.CleReversement = NouvelleCle(p);
+            p.ErreurReversement = "Refusé par l'opérateur, nouvel essai prévu";
         }
-        p.StatutReversement = StatutReversement.AFaire;
-        p.CleReversement = NouvelleCle(p);
-        p.ErreurReversement = "Refusé par l'opérateur, nouvel essai prévu";
         await db.SaveChangesAsync();
     }
 
     // Reversement impossible : l'argent reste sur le wallet SasPay, à reverser à la main
-    private async Task AbandonnerAsync(Paiement p, Locataire l, string? raison)
+    private async Task AbandonnerAsync(Paiement p, string? raison)
     {
+        var l = p.Locataire;
         p.StatutReversement = StatutReversement.Echoue;
         p.ErreurReversement = Tronquer(raison);
         notifications.Ajouter(l.ProprietaireId, TypeNotification.Systeme, $"Reversement du loyer en attente — {l.NomComplet}",
@@ -351,7 +435,7 @@ public class PaiementLoyerService(
     }
 
     // Une erreur sur un loyer ne doit bloquer ni la page du locataire ni les autres loyers
-    private async Task SansPlanterAsync(Paiement p, Func<Task> action)
+    private async Task SansPlanterAsync(object quoi, Func<Task> action)
     {
         try
         {
@@ -359,12 +443,18 @@ public class PaiementLoyerService(
         }
         catch (Exception ex)
         {
-            journal.LogWarning(ex, "Traitement du loyer {Id} impossible pour l'instant (nouvel essai plus tard)", p.Id);
+            journal.LogWarning(ex, "Traitement du loyer {Quoi} impossible pour l'instant (nouvel essai plus tard)", quoi);
         }
     }
 
     // Nouvelle clé d'idempotence pour un nouvel essai (au plus ~45 caractères : la colonne en accepte 100)
     private static string NouvelleCle(Paiement p) => $"REV-{p.Id}-{Guid.NewGuid():N}";
+
+    // Loyers avec leur locataire, son bailleur et son logement (nom et compte du bénéficiaire du reversement)
+    private IQueryable<Paiement> PaiementsAvecLocataire() =>
+        db.Paiements
+            .Include(p => p.Locataire).ThenInclude(l => l.Proprietaire)
+            .Include(p => p.Locataire).ThenInclude(l => l.Logement).ThenInclude(g => g!.Immeuble);
 
     private static string? Tronquer(string? texte) => texte is { Length: > 300 } ? texte[..300] : texte;
 

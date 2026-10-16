@@ -94,6 +94,8 @@ du logement, frais déduits. Prérequis côté SasPay : clé avec la portée « 
 sortantes de l’API déclarées dans Développeur → IP Whitelist. Un reversement qui ne part pas (fonds pas encore
 disponibles, IP non autorisée…) est réessayé toutes les 10 minutes, avec la même clé d’idempotence tant que son sort
 est incertain ; au bout de 7 jours ou de 3 refus de l’opérateur, il est marqué « à régulariser » et le bailleur est prévenu.
+SasPay refuse les retraits de moins de 3 000 FCFA (`Saspay:MinimumReversement`) : les petits montants destinés au même
+numéro sont cumulés et reversés en un seul retrait dès que ce minimum est atteint.
 
 ## Routes
 
